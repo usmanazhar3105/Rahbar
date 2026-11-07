@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rahbar-config
+  namespace: rahbar
+data:
+  CHROMA_HOST: "chroma"
+  REDIS_HOST: "redis"
+  EMBED_MODEL: "nomic-embed-text"
+  TOP_K: "5"
+  RELEVANCE_FLOOR: "0.3"
+  CACHE_THRESHOLD: "0.92"
+  TEMPERATURE: "0.1"
+  LLM_PROVIDER: "groq"
+  OLLAMA_HOST: ""
+
