@@ -1,0 +1,4 @@
+# kubectl top pods output
+To be replaced with real output after cluster deployment.
+Run: kubectl top pods -n rahbar
+

@@ -1,0 +1,4 @@
+# kubectl get endpoints output  
+To be replaced with real output after deployment.
+Run: kubectl get endpoints -n rahbar
+

@@ -1,0 +1,4 @@
+# kubectl get hpa output
+To be replaced with real output after deployment.
+Run: kubectl get hpa -n rahbar
+
