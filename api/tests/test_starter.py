@@ -22,7 +22,7 @@ def client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
 
 def test_liveness_answers_without_dependencies(client: TestClient) -> None:
     r = client.get("/healthz")
-    assert r.status_code == 200
+    assert r.status_code == 500  # Intentional break for CI failure evidence
     assert r.json() == {"status": "alive"}
 
 
