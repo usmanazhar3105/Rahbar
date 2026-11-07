@@ -1,0 +1,104 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - dev
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  lint:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install ruff mypy
+      - run: ruff check api/ indexer/
+      - run: mypy api/ indexer/ --ignore-missing-imports
+
+  test:
+    needs: lint
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r api/requirements.txt pytest pytest-cov
+      - run: |
+          LLM_PROVIDER=stub pytest api/tests/ indexer/tests/ \
+            --cov=api --cov=indexer --cov-fail-under=60 -v
+
+  manifests:
+    needs: lint
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          curl -s https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh | bash
+          sudo mv kustomize /usr/local/bin/ || true
+          curl -L https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz | tar xz
+      - run: |
+          kustomize build k8s/overlays/prod | ./kubeconform -strict -summary
+
+  build:
+    needs: [test, manifests]
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t rahbar-api:${{ github.sha }} ./api
+      - run: docker build -t rahbar-indexer:${{ github.sha }} ./indexer
+      - run: docker build -t rahbar-ui:${{ github.sha }} ./ui
+
+  scan:
+    needs: build
+    permissions:
+      contents: read
+      security-events: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: rahbar-api:${{ github.sha }}
+          exit-code: 1
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+
+  e2e-eval:
+    needs: scan
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: helm/kind-action@v1
+      - run: |
+          kubectl apply -f k8s/base/namespace.yaml
+          kubectl apply -f k8s/base/configmap.yaml
+          kubectl create secret generic rahbar-secret \
+            --from-literal=GROQ_API_KEY=stub -n rahbar
+          kubectl apply -f k8s/base/
+      - run: |
+          kubectl wait --for=condition=complete \
+            job/indexer -n rahbar --timeout=300s
+      - run: |
+          kubectl rollout status deployment/api \
+            -n rahbar --timeout=120s
+      - run: |
+          pip install -r api/requirements.txt
+          LLM_PROVIDER=stub python eval/run_eval.py \
+            --base-url http://localhost/api
+
