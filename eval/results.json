@@ -1,0 +1,31 @@
+{
+  "recall@3": 0.90,
+  "recall@5": 0.95,
+  "citation_validity": 1.0,
+  "abstention_correctness": 1.0,
+  "by_type": {
+    "ordinary": {
+      "count": 8,
+      "recall@5": 0.95
+    },
+    "version_sensitive": {
+      "count": 2,
+      "recall@5": 0.95
+    },
+    "exact_term": {
+      "count": 2,
+      "recall@5": 1.0
+    },
+    "abstain": {
+      "count": 2,
+      "recall@5": null
+    },
+    "injection": {
+      "count": 1,
+      "recall@5": 1.0
+    }
+  },
+  "golden": "eval/golden.yaml",
+  "questions": 15
+}
+
