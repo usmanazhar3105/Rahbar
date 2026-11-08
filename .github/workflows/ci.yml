@@ -101,10 +101,33 @@ jobs:
           kubectl create secret generic rahbar-secret \
             --from-literal=GROQ_API_KEY=stub -n rahbar
           kubectl apply -k k8s/base/
-      - run: |
+      - name: Wait for chroma and indexer
+        run: |
           kubectl rollout status statefulset/chroma -n rahbar --timeout=120s
-          kubectl wait --for=condition=complete \
-            job/indexer -n rahbar --timeout=300s
+          for i in $(seq 1 60); do
+            STATUS=$(kubectl get job/indexer -n rahbar -o jsonpath='{.status.conditions[?(@.type=="Complete")].status}')
+            FAILED=$(kubectl get job/indexer -n rahbar -o jsonpath='{.status.conditions[?(@.type=="Failed")].status}')
+            if [ "$STATUS" = "True" ]; then
+              echo "Job/indexer completed successfully!"
+              exit 0
+            fi
+            if [ "$FAILED" = "True" ]; then
+              echo "Job/indexer failed!"
+              exit 1
+            fi
+            sleep 5
+          done
+          echo "Timed out waiting for job/indexer"
+          exit 1
+
+      - name: Dump cluster state on failure
+        if: failure()
+        run: |
+          kubectl get pods,jobs,networkpolicy -n rahbar -o wide
+          kubectl describe job/indexer -n rahbar || true
+          kubectl logs job/indexer -n rahbar --all-containers --tail=300 || true
+          kubectl describe pods -n rahbar || true
+          kubectl get events -n rahbar --sort-by=.lastTimestamp
       - run: |
           kubectl rollout status deployment/api \
             -n rahbar --timeout=120s
