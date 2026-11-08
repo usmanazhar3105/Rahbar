@@ -89,6 +89,17 @@ def store_chunks(
 
     client = get_chroma_client(c_host, c_port)
 
+    # If real client has heartbeat, poll briefly until Chroma is accepting connections
+    if hasattr(client, "heartbeat"):
+        import time
+
+        for _ in range(20):
+            try:
+                client.heartbeat()
+                break
+            except Exception:
+                time.sleep(2)
+
     # Recreate collection to ensure atomic clean replace
     try:
         client.delete_collection(collection_name)
