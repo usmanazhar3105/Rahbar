@@ -41,11 +41,7 @@ settings = Settings(
 )
 
 app.state.settings = settings
-if settings.retriever == "chroma":
-    from .retrieval.chroma import ChromaRetriever
-    app.state.retriever = ChromaRetriever(settings)
-else:
-    app.state.retriever = StubRetriever()
+app.state.retriever = StubRetriever()
 app.state.provider = get_provider(settings)
 
 app.include_router(health.router)

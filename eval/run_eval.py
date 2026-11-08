@@ -214,7 +214,7 @@ def gate(results: dict, baseline: dict | None) -> list[str]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Evaluate RAHBAR against a golden set.")
-    parser.add_argument("--api", required=True, help="base URL, e.g. http://192.168.49.2")
+    parser.add_argument("--api", "--base-url", dest="api", required=True, help="base URL, e.g. http://192.168.49.2")
     parser.add_argument("--host", help="Host header, when your Ingress rule names a host")
     parser.add_argument("--golden", type=Path, default=HERE / "golden.yaml")
     parser.add_argument("--baseline", type=Path, default=HERE / "baseline.json")

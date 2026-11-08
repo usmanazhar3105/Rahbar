@@ -15,9 +15,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: pip install -r api/requirements.txt pytest pytest-cov
+      - run: pip install -r api/requirements.txt -r indexer/requirements.txt pytest pytest-cov
       - run: |
-          LLM_PROVIDER=stub pytest api/tests/ indexer/tests/ \
+          PYTHONPATH=api:indexer LLM_PROVIDER=stub pytest api/tests/ indexer/tests/ \
             --cov=api --cov=indexer --cov-fail-under=60 -v
 
   build-push:

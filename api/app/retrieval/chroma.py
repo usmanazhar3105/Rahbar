@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import hashlib
 import logging
-import math
 import re
 from typing import Any
 
@@ -35,29 +33,10 @@ def should_filter_superseded(query: str) -> bool:
     superseded documents.
     """
     q_lower = query.lower()
-    q_clean = re.sub(r"ignore\s+all\s+previous\s+instructions[^\.\?\!]*[\.\?\!]?", "", q_lower)
     for term in HISTORICAL_TERMS:
-        if re.search(rf"\b{re.escape(term)}\b", q_clean):
+        if re.search(rf"\b{re.escape(term)}\b", q_lower):
             return False
     return True
-
-
-def deterministic_embedding(text: str, dim: int = 768) -> list[float]:
-    """Generates a normalized feature vector for text matching."""
-    vec = [0.0] * dim
-    words = re.findall(r"\w+", text.lower())
-    for w in words:
-        if w in {
-            "is", "the", "a", "an", "and", "or", "to", "for", "in", "on", "of",
-            "what", "which", "how", "under", "according", "with",
-        }:
-            continue
-        h = int(hashlib.md5(w.encode("utf-8")).hexdigest(), 16) % dim
-        vec[h] += 1.0
-    norm = math.sqrt(sum(v * v for v in vec))
-    if norm > 0:
-        return [v / norm for v in vec]
-    return [1.0 / math.sqrt(dim)] * dim
 
 
 def verify_embed_model(
@@ -96,12 +75,7 @@ class ChromaRetriever:
                 host=settings.chroma_host,
                 port=settings.chroma_port,
             )
-        col_name = getattr(settings, "collection", "rahbar")
-        try:
-            self.collection = self.client.get_collection(col_name)
-        except Exception:
-            alt_name = "rahbar_docs" if col_name == "rahbar" else "rahbar"
-            self.collection = self.client.get_collection(alt_name)
+        self.collection = self.client.get_collection(settings.collection)
 
     def _get_embedding(self, text: str) -> list[float]:
         ollama_url = (
@@ -120,9 +94,9 @@ class ChromaRetriever:
                     if data.get("embeddings"):
                         return data["embeddings"][0]
         except Exception as exc:
-            log.warning("Ollama embedding call failed: %s. Using deterministic fallback vector.", exc)
+            log.warning("Ollama embedding call failed: %s. Using fallback vector.", exc)
 
-        return deterministic_embedding(text, dim=768)
+        return [0.1] * 768
 
     def retrieve(
         self,
