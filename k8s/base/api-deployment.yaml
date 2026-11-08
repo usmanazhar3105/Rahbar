@@ -3,32 +3,36 @@ kind: Deployment
 metadata:
   name: api
   namespace: rahbar
-  labels:
-    app: api
 spec:
   replicas: 3
+  selector:
+    matchLabels:
+      app: api
   strategy:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 0
-  selector:
-    matchLabels:
-      app: api
   template:
     metadata:
       labels:
         app: api
     spec:
       serviceAccountName: api-sa
+      automountServiceAccountToken: false
       terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      volumes:
+        - name: tmp
+          emptyDir: {}
       containers:
         - name: api
-          image: rahbar-api:local
+          image: DOCKERHUB_USERNAME/rahbar-api:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
-              name: http
           envFrom:
             - configMapRef:
                 name: rahbar-config
@@ -38,27 +42,26 @@ spec:
                 secretKeyRef:
                   name: rahbar-secret
                   key: GROQ_API_KEY
-          lifecycle:
-            preStop:
-              exec:
-                command: ["/bin/sh", "-c", "sleep 5"]
-          resources:
-            requests:
-              cpu: 100m
-              memory: 256Mi
-            limits:
-              cpu: 500m
-              memory: 512Mi
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           securityContext:
-            runAsNonRoot: true
             readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false
             capabilities:
               drop:
                 - ALL
-          volumeMounts:
-            - name: tmp-dir
-              mountPath: /tmp
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "5"]
           startupProbe:
             httpGet:
               path: /healthz
@@ -77,7 +80,3 @@ spec:
               port: 8000
             periodSeconds: 10
             failureThreshold: 3
-      volumes:
-        - name: tmp-dir
-          emptyDir: {}
-

@@ -1,24 +1,20 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-
-namespace: rahbar
-
 resources:
   - ../../base
-
 patches:
   - patch: |-
-      apiVersion: apps/v1
+      - op: replace
+        path: /spec/replicas
+        value: 1
+    target:
       kind: Deployment
-      metadata:
-        name: api
-      spec:
-        replicas: 1
+      name: api
   - patch: |-
-      apiVersion: v1
+      - op: replace
+        path: /data/LLM_PROVIDER
+        value: stub
+    target:
       kind: ConfigMap
-      metadata:
-        name: rahbar-config
-      data:
-        LLM_PROVIDER: "stub"
+      name: rahbar-config
 

@@ -39,11 +39,7 @@ def flush_redis_cache(redis_host: str) -> None:
         import redis
 
         r_host = redis_host
-        raw_r_port = os.environ.get("REDIS_PORT", "6379")
-        if ":" in str(raw_r_port):
-            r_port = int(str(raw_r_port).split(":")[-1])
-        else:
-            r_port = int(raw_r_port)
+        r_port = int(os.environ.get("REDIS_PORT", 6379))
         if ":" in r_host:
             parts = r_host.split(":")
             r_host = parts[0]
@@ -77,28 +73,13 @@ def store_chunks(
 
     # Parse host and port
     c_host = chroma_host
-    raw_c_port = os.environ.get("CHROMA_PORT", "8000")
-    if ":" in str(raw_c_port):
-        c_port = int(str(raw_c_port).split(":")[-1])
-    else:
-        c_port = int(raw_c_port)
+    c_port = int(os.environ.get("CHROMA_PORT", 8000))
     if ":" in c_host:
         parts = c_host.split(":")
         c_host = parts[0]
         c_port = int(parts[1])
 
     client = get_chroma_client(c_host, c_port)
-
-    # If real client has heartbeat, poll briefly until Chroma is accepting connections
-    if hasattr(client, "heartbeat"):
-        import time
-
-        for _ in range(20):
-            try:
-                client.heartbeat()
-                break
-            except Exception:
-                time.sleep(2)
 
     # Recreate collection to ensure atomic clean replace
     try:
@@ -117,15 +98,13 @@ def store_chunks(
         name=collection_name,
         metadata=col_meta,
     )
-    try:
-        collection.modify(metadata={"embed_model": embed_model, "dimension": vector_dim})
-    except Exception:
-        pass
+    # Explicitly call modify to update/store collection-level metadata
+    collection.modify(metadata=col_meta)
 
     if chunks:
         ids = [c["chunk_id"] for c in chunks]
         documents = [c["text"] for c in chunks]
-        embeddings = [c.get("vector") or c.get("embedding") for c in chunks]
+        embeddings = [c["vector"] for c in chunks]
         metadatas = [
             {
                 "source": str(c.get("source", "")),

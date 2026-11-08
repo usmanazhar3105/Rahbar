@@ -3,8 +3,6 @@ kind: PersistentVolumeClaim
 metadata:
   name: redis-data
   namespace: rahbar
-  labels:
-    app: redis
 spec:
   accessModes:
     - ReadWriteOnce
@@ -17,8 +15,6 @@ kind: Deployment
 metadata:
   name: redis
   namespace: rahbar
-  labels:
-    app: redis
 spec:
   replicas: 1
   selector:
@@ -29,26 +25,29 @@ spec:
       labels:
         app: redis
     spec:
+      serviceAccountName: indexer-sa
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+      volumes:
+        - name: redis-storage
+          persistentVolumeClaim:
+            claimName: redis-data
       containers:
         - name: redis
           image: redis:7-alpine
-          imagePullPolicy: IfNotPresent
           command: ["redis-server", "--appendonly", "yes"]
           ports:
             - containerPort: 6379
-              name: redis
+          volumeMounts:
+            - name: redis-storage
+              mountPath: /data
           resources:
             requests:
-              cpu: 50m
-              memory: 64Mi
+              cpu: "50m"
+              memory: "64Mi"
             limits:
-              cpu: 200m
-              memory: 128Mi
-          volumeMounts:
-            - name: redis-data
-              mountPath: /data
-      volumes:
-        - name: redis-data
-          persistentVolumeClaim:
-            claimName: redis-data
+              cpu: "200m"
+              memory: "128Mi"
 

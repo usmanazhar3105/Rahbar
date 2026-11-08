@@ -5,9 +5,11 @@ All tests mock the Redis client; zero network or real Redis calls.
 
 from __future__ import annotations
 
+import json
 from unittest.mock import MagicMock
 
 import pytest
+
 from app.routes.metrics import CACHE_HITS, CACHE_MISSES
 from app.schemas import Answer, Citation
 from app.services.cache import (

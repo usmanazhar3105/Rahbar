@@ -1,38 +1,72 @@
+"""Runtime configuration, read once from environment variables.
+
+On the cluster these variables come from your ConfigMap and Secret (section 4.1).
+Nothing here is baked into the image, so one image runs in every environment.
+Add your own keys (relevance floor, cache settings, ...) the same way.
+"""
+
 from __future__ import annotations
 
-from typing import Any
-
-from pydantic import BaseModel, ConfigDict, Field
-
-
-class Settings(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-
-    retriever: str = Field(default="stub")
-    llm_provider: str = Field(default="stub")
-    llm_model: str = Field(default="llama-3.1-8b-instant")
-    hosted_base_url: str = Field(default="https://api.groq.com/openai/v1")
-    embed_model: str = Field(default="nomic-embed-text")
-    chroma_host: str = Field(default="chroma")
-    chroma_port: int = Field(default=8000)
-    collection: str = Field(default="rahbar")
-    top_k: int = Field(default=5)
-    relevance_floor: float = Field(default=0.3)
-    redis_host: str = Field(default="redis")
-    redis_port: int = Field(default=6379)
-    cache_threshold: float = Field(default=0.92)
-    temperature: float = Field(default=0.1)
-    ollama_host: str = Field(default="")
-
-    def __getattr__(self, item: str) -> Any:
-        return ""
+import os
+from dataclasses import dataclass, field
 
 
-_settings: Settings | None = None
+def _int(name: str, default: int) -> int:
+    return int(os.environ.get(name, default))
+
+
+def _float(name: str, default: float) -> float:
+    return float(os.environ.get(name, default))
+
+
+@dataclass(frozen=True)
+class Settings:
+    # Which implementations to load. "stub" needs no cluster, no model, no network.
+    retriever: str = "stub"          # RETRIEVER: stub | chroma
+    llm_provider: str = "stub"       # LLM_PROVIDER: stub | ollama-host | ollama-incluster | hosted
+
+    # The embedding pin (section 4.4). The indexer reads the same ConfigMap key.
+    embed_model: str = "nomic-embed-text"
+
+    # Vector store
+    chroma_host: str = "chroma"
+    chroma_port: int = 8000
+    collection: str = "rahbar"
+
+    # Semantic cache
+    redis_host: str = "redis"
+    redis_port: int = 6379
+    cache_threshold: float = 0.92
+
+    # Retrieval and generation
+    top_k: int = 5
+    relevance_floor: float = 0.3
+    temperature: float = 0.2
+    llm_model: str = "llama3.2:3b"
+    ollama_url: str = "http://host.minikube.internal:11434"
+    hosted_base_url: str = ""        # e.g. an OpenAI-compatible endpoint
+    llm_api_key: str = field(default="", repr=False)   # from the Secret; never log it
+
+    log_level: str = "INFO"
 
 
 def get_settings() -> Settings:
-    global _settings
-    if _settings is None:
-        _settings = Settings()
-    return _settings
+    return Settings(
+        retriever=os.environ.get("RETRIEVER", "stub"),
+        llm_provider=os.environ.get("LLM_PROVIDER", "stub"),
+        embed_model=os.environ.get("EMBED_MODEL", "nomic-embed-text"),
+        chroma_host=os.environ.get("CHROMA_HOST", "chroma"),
+        chroma_port=_int("CHROMA_PORT", 8000),
+        collection=os.environ.get("CHROMA_COLLECTION", "rahbar"),
+        redis_host=os.environ.get("REDIS_HOST", "redis"),
+        redis_port=_int("REDIS_PORT", 6379),
+        cache_threshold=_float("CACHE_THRESHOLD", 0.92),
+        top_k=_int("TOP_K", 5),
+        relevance_floor=_float("RELEVANCE_FLOOR", 0.3),
+        temperature=_float("TEMPERATURE", 0.2),
+        llm_model=os.environ.get("LLM_MODEL", "llama3.2:3b"),
+        ollama_url=os.environ.get("OLLAMA_URL", "http://host.minikube.internal:11434"),
+        hosted_base_url=os.environ.get("HOSTED_BASE_URL", ""),
+        llm_api_key=os.environ.get("LLM_API_KEY", ""),
+        log_level=os.environ.get("LOG_LEVEL", "INFO"),
+    )

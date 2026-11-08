@@ -7,7 +7,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from pipeline.clean import clean, clean_pages, clean_text
+import pytest
+
+from pipeline.clean import clean, clean_pages, clean_text, fix_ocr_errors
 from pipeline.extract import extract
 from pipeline.models import Document
 

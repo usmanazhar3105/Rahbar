@@ -4,22 +4,14 @@ metadata:
   name: rahbar-ingress
   namespace: rahbar
   annotations:
-    nginx.ingress.kubernetes.io/use-regex: "true"
-    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
 spec:
   ingressClassName: nginx
   rules:
     - host: rahbar.local
       http:
         paths:
-          - path: /api/(.*)
-            pathType: ImplementationSpecific
-            backend:
-              service:
-                name: api-service
-                port:
-                  number: 8000
-          - path: /api
+          - path: /api(/|$)(.*)
             pathType: Prefix
             backend:
               service:
@@ -33,3 +25,4 @@ spec:
                 name: ui-service
                 port:
                   number: 8080
+

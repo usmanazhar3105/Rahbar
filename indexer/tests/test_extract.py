@@ -5,10 +5,13 @@ Tests run offline with no model, no network, and test against fixture corpus and
 
 from __future__ import annotations
 
+import io
 from pathlib import Path
 from unittest.mock import patch
 
 import pypdf
+import pytest
+
 from pipeline.extract import (
     extract,
     extract_pdf,

@@ -25,7 +25,7 @@ from ..schemas import Answer
 
 log = logging.getLogger("rahbar.cache")
 
-DEFAULT_THRESHOLD = float(os.environ.get("CACHE_THRESHOLD", "0.92"))
+DEFAULT_THRESHOLD = float(os.environ.get("CACHE_THRESHOLD", 0.92))
 DEFAULT_TTL_SECONDS = 86400  # 24 hours
 
 
@@ -35,16 +35,7 @@ def get_redis_client() -> Any:
 
     settings = get_settings()
     host_str = os.environ.get("REDIS_HOST", settings.redis_host)
-    raw_port = os.environ.get("REDIS_PORT")
-    if raw_port and ":" in str(raw_port):
-        port = int(str(raw_port).split(":")[-1])
-    elif raw_port:
-        try:
-            port = int(raw_port)
-        except ValueError:
-            port = settings.redis_port
-    else:
-        port = settings.redis_port
+    port = int(os.environ.get("REDIS_PORT", settings.redis_port))
 
     if ":" in host_str:
         parts = host_str.split(":")

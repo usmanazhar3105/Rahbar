@@ -8,11 +8,12 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 
 import pytest
+from fastapi.testclient import TestClient
+
 from app.config import Settings
 from app.main import app
 from app.providers.llm.stub import StubProvider
 from app.retrieval.stub import StubRetriever
-from fastapi.testclient import TestClient
 
 
 @pytest.fixture

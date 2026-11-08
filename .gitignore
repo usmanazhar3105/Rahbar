@@ -34,5 +34,3 @@ venv/
 # Local scratch
 *.log
 .DS_Store
-.coverage
-setup_teammate_commit*.py

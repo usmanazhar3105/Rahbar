@@ -1,86 +1,61 @@
+"""Week-1 index: three fake chunks with fake vectors.
+
+It lets you build the Chroma StatefulSet, the indexer Job and the API's
+readiness check before the real pipeline exists. It needs no model.
+
+The collection metadata records embed_model="dummy-768". Once you add the
+embedding-pin check (section 4.4), the API will correctly refuse to become ready
+against this index; run the real pipeline to replace it.
+"""
+
 from __future__ import annotations
 
 import hashlib
 import math
 from typing import Any
 
-DUMMY_MODEL = "dummy-embed"
-DUMMY_DIM = 64
+from .config import IndexerSettings
+from .models import Chunk
+
+DUMMY_MODEL = "dummy-768"
+DUMMY_DIM = 768
+
+DUMMY_CHUNKS = [
+    Chunk(id="dummy-001", text="Dummy chunk one. The real indexer replaces this.",
+          source="dummy.md", section="1 Dummy", page=1, doc_version="dummy", superseded=False),
+    Chunk(id="dummy-002", text="Dummy chunk two. It exists so readiness has something to count.",
+          source="dummy.md", section="2 Dummy", page=1, doc_version="dummy", superseded=False),
+    Chunk(id="dummy-003", text="Dummy chunk three. Its vector is a hash, not an embedding.",
+          source="dummy.md", section="3 Dummy", page=1, doc_version="dummy", superseded=False),
+]
 
 
-def fake_vector(text: str) -> list[float]:
-    """Generates a deterministic unit vector from text."""
-    seed_hash = hashlib.sha256(text.encode("utf-8")).digest()
-    vals = [float((b % 100) + 1) for b in seed_hash]
-    while len(vals) < DUMMY_DIM:
-        seed_hash = hashlib.sha256(seed_hash).digest()
-        vals.extend([float((b % 100) + 1) for b in seed_hash])
-    vals = vals[:DUMMY_DIM]
-    norm = math.sqrt(sum(v * v for v in vals))
-    return [v / norm for v in vals]
+def fake_vector(text: str, dim: int = DUMMY_DIM) -> list[float]:
+    """Deterministic unit vector derived from the text's hash. Not an embedding."""
+    values: list[float] = []
+    seed = text.encode()
+    while len(values) < dim:
+        seed = hashlib.sha256(seed).digest()
+        values.extend((b - 127.5) / 127.5 for b in seed)
+    values = values[:dim]
+    norm = math.sqrt(sum(v * v for v in values)) or 1.0
+    return [v / norm for v in values]
 
 
-def write_dummy_index(settings: Any, client: Any) -> int:
-    """Writes a dummy index into the client for testing."""
-    target_collection = "rahbar"
+def write_dummy_index(settings: IndexerSettings, client: Any) -> int:
+    """Rebuild the collection with the three dummy chunks. Safe to run twice."""
     try:
-        client.delete_collection(target_collection)
-    except Exception:
+        client.delete_collection(settings.collection)
+    except Exception:  # the collection did not exist yet
         pass
-
-    col = client.create_collection(
-        name=target_collection,
-        metadata={
-            "embed_model": DUMMY_MODEL,
-            "dimension": DUMMY_DIM,
-            "hnsw:space": "cosine",
-        },
+    collection = client.create_collection(
+        name=settings.collection,
+        metadata={"hnsw:space": "cosine", "embed_model": DUMMY_MODEL, "dimension": DUMMY_DIM},
     )
-
-    dummy_chunks = [
-        (
-            "dummy-chunk-1",
-            "The minimum CGPA requirement is 2.00.",
-            fake_vector("The minimum CGPA requirement is 2.00."),
-            {
-                "source": "academic-rules-2026.md",
-                "section": "Section 1",
-                "page": 1,
-                "doc_version": "2026",
-                "superseded": False,
-            },
-        ),
-        (
-            "dummy-chunk-2",
-            "Attendance must be at least 75%.",
-            fake_vector("Attendance must be at least 75%."),
-            {
-                "source": "academic-rules-2026.md",
-                "section": "Section 2",
-                "page": 2,
-                "doc_version": "2026",
-                "superseded": False,
-            },
-        ),
-        (
-            "dummy-chunk-3",
-            "Superceded academic warning rule from 2023.",
-            fake_vector("Superceded academic warning rule from 2023."),
-            {
-                "source": "academic-rules-2023.md",
-                "section": "Section 2",
-                "page": 1,
-                "doc_version": "2023",
-                "superseded": True,
-            },
-        ),
-    ]
-
-    col.add(
-        ids=[c[0] for c in dummy_chunks],
-        documents=[c[1] for c in dummy_chunks],
-        embeddings=[c[2] for c in dummy_chunks],
-        metadatas=[c[3] for c in dummy_chunks],
+    collection.add(
+        ids=[c.id for c in DUMMY_CHUNKS],
+        documents=[c.text for c in DUMMY_CHUNKS],
+        embeddings=[fake_vector(c.text) for c in DUMMY_CHUNKS],
+        metadatas=[c.metadata() for c in DUMMY_CHUNKS],
     )
-    return len(dummy_chunks)
-
+    return int(collection.count())

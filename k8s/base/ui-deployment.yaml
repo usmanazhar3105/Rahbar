@@ -3,8 +3,6 @@ kind: Deployment
 metadata:
   name: ui
   namespace: rahbar
-  labels:
-    app: ui
 spec:
   replicas: 1
   selector:
@@ -16,20 +14,44 @@ spec:
         app: ui
     spec:
       serviceAccountName: ui-sa
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+      volumes:
+        - name: tmp
+          emptyDir: {}
       containers:
         - name: ui
-          image: rahbar-ui:local
+          image: DOCKERHUB_USERNAME/rahbar-ui:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
-              name: http
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
           resources:
             requests:
-              cpu: 50m
-              memory: 64Mi
+              cpu: "50m"
+              memory: "64Mi"
             limits:
-              cpu: 200m
-              memory: 128Mi
-          securityContext:
-            runAsNonRoot: true
-
+              cpu: "200m"
+              memory: "128Mi"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 20
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 10
+            failureThreshold: 3

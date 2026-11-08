@@ -1,27 +1,23 @@
-"""Retrieval package."""
-
 from __future__ import annotations
 
-from ..schemas import Passage, RetrievedChunk
-from .chroma import ChromaRetriever, should_filter_superseded, verify_embed_model
+from ..config import Settings
+from .base import Retriever
+from .chroma import ChromaRetriever, verify_embed_model
 from .stub import StubRetriever
 
-Retriever = ChromaRetriever
 
-
-def get_retriever(settings=None):
-    if settings and getattr(settings, "retriever", "stub") == "chroma":
+def get_retriever(settings: Settings) -> Retriever:
+    if settings.retriever == "stub":
+        return StubRetriever()
+    if settings.retriever == "chroma":
         return ChromaRetriever(settings)
-    return StubRetriever()
+    raise ValueError(f"unknown RETRIEVER {settings.retriever!r}; expected stub or chroma")
 
 
 __all__ = [
-    "ChromaRetriever",
-    "Passage",
-    "RetrievedChunk",
     "Retriever",
+    "ChromaRetriever",
     "StubRetriever",
     "get_retriever",
-    "should_filter_superseded",
     "verify_embed_model",
 ]

@@ -1,3 +1,9 @@
+"""A provider with no model and no network.
+
+Use it for every unit test and for CI (section 6): your tests must never call a
+real model. It is deterministic: the same input always gives the same output.
+"""
+
 from __future__ import annotations
 
 from ...schemas import Answer, Citation, Passage
@@ -7,20 +13,20 @@ class StubProvider:
     name = "stub"
 
     def generate(self, question: str, passages: list[Passage]) -> Answer:
-        citations = []
-        if passages:
-            first_p = passages[0]
-            citations = [
-                Citation(
-                    source=first_p.source,
-                    section=first_p.section,
-                    page=first_p.page or 1,
-                )
-            ]
+        if not passages:
+            return Answer(
+                reasoning="stub: nothing was retrieved",
+                answer="(stub) No passages were retrieved for this question.",
+                citations=[],
+                answered_from_context=False,
+                confidence="low",
+            )
+        top = passages[0]
         return Answer(
-            reasoning="Grounded answer based on academic policy.",
-            answer=f"Based on {citations[0].source if citations else 'the policy'}, {passages[0].text if passages else 'No information available.'}",
-            citations=citations,
-            answered_from_context=bool(passages),
-            confidence="high" if passages else "low",
+            reasoning="stub: cites the first retrieved passage",
+            answer=f"(stub) A model would answer here from {len(passages)} passages. "
+            f"The first one says: {top.text}",
+            citations=[Citation(source=top.source, section=top.section, page=top.page)],
+            answered_from_context=True,
+            confidence="low",
         )
