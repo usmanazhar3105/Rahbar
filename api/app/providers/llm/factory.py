@@ -6,7 +6,7 @@ import os
 
 from ...config import Settings
 from .base import LLMProvider
-from .hosted import GroqProvider, HostedProvider
+from .hosted import GroqProvider
 from .stub import StubProvider
 
 
@@ -16,10 +16,8 @@ def get_provider(settings: Settings | None = None) -> LLMProvider:
     Reads LLM_PROVIDER from settings or environment.
     Supported: groq (default), hosted, stub.
     """
-    provider_name = (
-        (settings.llm_provider if settings else None)
-        or os.getenv("LLM_PROVIDER", "groq")
-    ).lower()
+    raw_name = (settings.llm_provider if settings else None) or os.getenv("LLM_PROVIDER") or "groq"
+    provider_name = str(raw_name).lower()
 
     if provider_name in ("groq", "hosted"):
         return GroqProvider(settings=settings)

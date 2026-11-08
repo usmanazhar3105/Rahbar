@@ -177,7 +177,7 @@ def main() -> int:
     golden_data = yaml.safe_load(args.golden.read_text(encoding="utf-8")) or {}
     questions = golden_data.get("questions", [])
 
-    corpus_docs = discover(str(args.corpus))
+    corpus_docs = list(discover(str(args.corpus)))
     if not corpus_docs:
         raise SystemExit(f"No documents found in {args.corpus}")
 

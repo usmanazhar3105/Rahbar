@@ -7,12 +7,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
-from pipeline.chunk import chunk, chunk_pages, count_tokens, is_heading
+from pipeline.chunk import chunk, chunk_pages, is_heading
 from pipeline.clean import clean
 from pipeline.extract import extract
-from pipeline.models import Chunk, Document
+from pipeline.models import Chunk
 
 
 def test_is_heading_detection() -> None:

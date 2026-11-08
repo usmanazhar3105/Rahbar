@@ -22,7 +22,7 @@ spec:
           restartPolicy: OnFailure
           containers:
             - name: indexer
-              image: YOUR_DOCKERHUB/rahbar-indexer:latest
+              image: rahbar-indexer:local
               imagePullPolicy: IfNotPresent
               envFrom:
                 - configMapRef:

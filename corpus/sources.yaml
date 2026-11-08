@@ -1,0 +1,49 @@
+documents:
+  - name: "academic_rules_aug2023"
+    file: "academic_rules_aug2023.pdf"
+    url: "http://nu.edu.pk/public/downloads/Academic-Rules-Undergrad-Aug-2023.pdf"
+    doc_version: "2023-08"
+    superseded: true
+
+  - name: "academic_rules_handbook_jun2026"
+    file: "academic_rules_handbook_jun2026.pdf"
+    url: "https://nu.edu.pk/public/downloads/Academic_Rules_Handbook_2026.pdf"
+    doc_version: "2026-06"
+    superseded: false
+
+  - name: "prospectus_academic_rules_2026"
+    file: "prospectus_academic_rules_2026.pdf"
+    url: "https://nu.edu.pk/Admissions/ProspectusUpload/Academic Rules and Regulations.pdf"
+    doc_version: "2026-06"
+    superseded: false
+
+  - name: "student_handbook_jun2026"
+    file: "student_handbook_jun2026.pdf"
+    url: "https://nu.edu.pk/public/downloads/Student_Handbook_2026.pdf"
+    doc_version: "2026-06"
+    superseded: false
+
+  - name: "annual_report_2019_20"
+    file: "annual_report_2019_20.pdf"
+    url: "https://nu.edu.pk/public/downloads/AnnualReportForm/Annual Report 2019-20.pdf"
+    doc_version: "2020-06"
+    superseded: true
+
+  - name: "annual_report_2023_24"
+    file: "annual_report_2023_24.pdf"
+    url: "https://nu.edu.pk/public/downloads/AnnualReportForm/Annual Report 2023-24.pdf"
+    doc_version: "2024-06"
+    superseded: false
+
+  - name: "fee_structure_2026"
+    file: "fee_structure_2026.html"
+    url: "https://www.nu.edu.pk/Admissions/FeeStructure"
+    doc_version: "2026-06"
+    superseded: false
+
+  - name: "faculty_entrepreneurship_policy"
+    file: "faculty_entrepreneurship_policy.pdf"
+    url: "https://nu.edu.pk/OricResources/ResearchPolicies/27.pdf?20220530"
+    doc_version: "2022-05"
+    superseded: false
+

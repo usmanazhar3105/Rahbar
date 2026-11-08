@@ -24,7 +24,7 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: api
-          image: YOUR_DOCKERHUB/rahbar-api:latest
+          image: rahbar-api:local
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000

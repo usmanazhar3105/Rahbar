@@ -5,11 +5,10 @@ All tests mock ChromaDB and Ollama HTTP endpoints; zero network or model calls.
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import httpx
 import pytest
-
 from app.config import Settings
 from app.retrieval.chroma import (
     ChromaRetriever,
@@ -121,7 +120,7 @@ def test_chroma_retriever_removes_superseded_filter_for_old_policy_query(mock_se
 
     with patch.object(httpx.Client, "post", mock_post):
         # Query asking for previous policy
-        passages = retriever.retrieve("What was the rule in the 2023 rules?", k=5)
+        _ = retriever.retrieve("What was the rule in the 2023 rules?", k=5)
 
         # where clause must be omitted when historical queries are detected
         assert "where" not in fake_col.last_query_kwargs

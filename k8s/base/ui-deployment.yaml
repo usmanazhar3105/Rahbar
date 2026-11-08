@@ -18,7 +18,7 @@ spec:
       serviceAccountName: ui-sa
       containers:
         - name: ui
-          image: YOUR_DOCKERHUB/rahbar-ui:latest
+          image: rahbar-ui:local
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
