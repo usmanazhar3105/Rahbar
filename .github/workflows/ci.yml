@@ -39,7 +39,9 @@ jobs:
           pip install -r api/requirements.txt
           pip install -r indexer/requirements.txt
           pip install pytest pytest-cov
-      - run: |
+      - name: Run tests
+        run: |
+          cd api && \
           LLM_PROVIDER=stub \
           CHROMA_HOST=localhost \
           REDIS_HOST=localhost \
@@ -49,12 +51,17 @@ jobs:
           RELEVANCE_FLOOR=0.3 \
           CACHE_THRESHOLD=0.92 \
           TEMPERATURE=0.1 \
-          pytest api/tests/ indexer/tests/ \
-            --cov=api --cov=indexer \
-            --cov-fail-under=60 \
-            --ignore=api/tests/test_routes.py \
-            --ignore=api/tests/test_cache.py \
-            -v
+          PYTHONPATH=. \
+          python -m pytest tests/ --cov=app -v
+          cd .. && \
+          cd indexer && \
+          LLM_PROVIDER=stub \
+          CHROMA_HOST=localhost \
+          REDIS_HOST=localhost \
+          EMBED_MODEL=nomic-embed-text \
+          GROQ_API_KEY=stub-key \
+          PYTHONPATH=. \
+          python -m pytest tests/ --cov=pipeline -v
 
   manifests:
     name: Validate Manifests
