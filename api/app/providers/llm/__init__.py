@@ -6,9 +6,9 @@ from .hosted import GroqProvider, HostedProvider
 from .stub import StubProvider
 
 __all__ = [
-    "LLMProvider",
     "GroqProvider",
     "HostedProvider",
+    "LLMProvider",
     "StubProvider",
     "get_provider",
 ]

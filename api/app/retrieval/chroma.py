@@ -7,14 +7,13 @@ unless requested, applies a relevance floor, and maps results to Passage objects
 from __future__ import annotations
 
 import logging
-import os
 import re
 from typing import Any
 
 import httpx
 
 from ..config import Settings, get_settings
-from ..schemas import Passage, RetrievedChunk
+from ..schemas import Passage
 
 log = logging.getLogger("rahbar.retrieval.chroma")
 

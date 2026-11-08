@@ -12,11 +12,11 @@ from .retrieval import (
 from .schemas import Passage, RetrievedChunk
 
 __all__ = [
-    "Retriever",
     "ChromaRetriever",
-    "StubRetriever",
     "Passage",
     "RetrievedChunk",
+    "Retriever",
+    "StubRetriever",
     "get_retriever",
     "verify_embed_model",
 ]

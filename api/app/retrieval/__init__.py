@@ -15,8 +15,8 @@ def get_retriever(settings: Settings) -> Retriever:
 
 
 __all__ = [
-    "Retriever",
     "ChromaRetriever",
+    "Retriever",
     "StubRetriever",
     "get_retriever",
     "verify_embed_model",

@@ -6,7 +6,7 @@ All tests use mocks to intercept HTTP calls; zero network or real API keys neede
 from __future__ import annotations
 
 import json as json_lib
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import httpx
 import pytest
@@ -15,7 +15,7 @@ from app.providers.llm.factory import get_provider
 from app.providers.llm.hosted import GroqProvider
 from app.providers.llm.stub import StubProvider
 from app.routes.metrics import FALLBACKS, TOKENS_IN, TOKENS_OUT
-from app.schemas import Answer, Citation, Passage
+from app.schemas import Answer, Passage
 
 
 def make_test_passages(with_injection: bool = False) -> list[Passage]:

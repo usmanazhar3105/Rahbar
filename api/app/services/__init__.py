@@ -15,14 +15,14 @@ from .cache import (
 
 __all__ = [
     "answer_question",
+    "cache_invalidate",
     "cache_lookup",
     "cache_store",
-    "cache_invalidate",
     "clear_cache",
-    "flush_cache",
-    "should_cache",
-    "never_cache",
-    "skip_cache",
     "cosine_similarity",
+    "flush_cache",
+    "never_cache",
+    "should_cache",
+    "skip_cache",
 ]
 

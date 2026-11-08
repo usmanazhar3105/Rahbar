@@ -5,9 +5,8 @@ All tests mock ChromaDB and Redis clients and run offline with no external servi
 
 from __future__ import annotations
 
+from typing import Any
 from unittest.mock import MagicMock, patch
-
-import pytest
 
 from pipeline.config import IndexerSettings
 from pipeline.models import Chunk
