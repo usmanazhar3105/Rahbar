@@ -161,18 +161,47 @@ jobs:
           kubectl patch configmap rahbar-config \
             -n rahbar \
             --patch '{"data":{"LLM_PROVIDER":"stub"}}'
-      - name: Patch image names for CI
+      - name: Patch deployment images for CI
         run: |
           kubectl set image deployment/api \
             api=rahbar-api:${{ github.sha }} -n rahbar
           kubectl set image deployment/ui \
             ui=rahbar-ui:${{ github.sha }} -n rahbar
-          kubectl set image statefulset/chroma \
-            chroma=chromadb/chroma:0.4.24 -n rahbar
+      - name: Run indexer with correct image
+        run: |
           kubectl delete job indexer -n rahbar --ignore-not-found
-          kubectl create job indexer-ci --from=cronjob/reindex -n rahbar
-          kubectl set image job/indexer-ci \
-            indexer=rahbar-indexer:${{ github.sha }} -n rahbar
+          kubectl delete job indexer-ci -n rahbar --ignore-not-found
+          cat <<EOF | kubectl apply -f -
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: indexer-ci
+            namespace: rahbar
+          spec:
+            backoffLimit: 3
+            template:
+              spec:
+                serviceAccountName: indexer-sa
+                automountServiceAccountToken: false
+                restartPolicy: OnFailure
+                containers:
+                  - name: indexer
+                    image: rahbar-indexer:${{ github.sha }}
+                    imagePullPolicy: Never
+                    envFrom:
+                      - configMapRef:
+                          name: rahbar-config
+                    env:
+                      - name: GROQ_API_KEY
+                        value: "stub-key-for-ci"
+                    resources:
+                      requests:
+                        cpu: "200m"
+                        memory: "512Mi"
+                      limits:
+                        cpu: "1000m"
+                        memory: "1024Mi"
+          EOF
       - name: Debug indexer status
         run: |
           kubectl get pods -n rahbar
@@ -184,7 +213,8 @@ jobs:
             --for=condition=complete \
             job/indexer-ci \
             -n rahbar \
-            --timeout=600s
+            --timeout=600s || \
+          (kubectl logs job/indexer-ci -n rahbar && exit 1)
       - name: Wait for api rollout
         run: |
           kubectl rollout status \
