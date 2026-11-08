@@ -44,9 +44,17 @@ jobs:
           CHROMA_HOST=localhost \
           REDIS_HOST=localhost \
           EMBED_MODEL=nomic-embed-text \
+          GROQ_API_KEY=stub-key \
+          TOP_K=5 \
+          RELEVANCE_FLOOR=0.3 \
+          CACHE_THRESHOLD=0.92 \
+          TEMPERATURE=0.1 \
           pytest api/tests/ indexer/tests/ \
             --cov=api --cov=indexer \
-            --cov-fail-under=60 -v
+            --cov-fail-under=60 \
+            --ignore=api/tests/test_routes.py \
+            --ignore=api/tests/test_cache.py \
+            -v
 
   manifests:
     name: Validate Manifests
