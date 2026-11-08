@@ -1,5 +1,6 @@
 # Production-ready, security-hardened Dockerfile for RAHBAR Indexer Job
 FROM python:3.11-slim
+RUN pip install --upgrade pip setuptools==78.1.1
 
 # Prevent Python from writing bytecode and enable unbuffered batch output
 ENV PYTHONDONTWRITEBYTECODE=1 \
