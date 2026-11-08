@@ -61,3 +61,8 @@ def test_metrics_count_requests_by_route(client: TestClient) -> None:
     client.post("/api/ask", json={"question": "Count this request"})
     text = client.get("/metrics").text
     assert 'rahbar_requests_total{path="/api/ask",status="200"}' in text
+
+
+def test_intentional_break():
+    assert 1 == 2  # intentional CI break for evidence
+
