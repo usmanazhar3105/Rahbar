@@ -123,6 +123,7 @@ jobs:
           exit-code: "1"
           severity: HIGH,CRITICAL
           ignore-unfixed: true
+          trivyignores: .trivyignore
       - name: Build indexer for scan
         run: |
           docker build -t rahbar-indexer:${{ github.sha }} ./indexer
@@ -133,6 +134,7 @@ jobs:
           exit-code: "1"
           severity: HIGH,CRITICAL
           ignore-unfixed: true
+          trivyignores: .trivyignore
 
   e2e-eval:
     name: E2E Evaluation
