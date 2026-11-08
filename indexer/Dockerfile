@@ -24,7 +24,8 @@ RUN groupadd --gid 1000 appgroup && \
 
 # Copy and install dependencies first for optimal layer caching
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir -r requirements.txt
 
 # Copy indexer pipeline code
 COPY pipeline/ ./pipeline/
