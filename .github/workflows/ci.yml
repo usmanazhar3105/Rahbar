@@ -134,14 +134,28 @@ jobs:
           kind load docker-image \
             rahbar-ui:${{ github.sha }} \
             --name rahbar-ci
+      - name: Create CI secret
+        run: |
+          kubectl apply -f k8s/base/namespace.yaml
+          kubectl create secret generic rahbar-secret \
+            --from-literal=GROQ_API_KEY=stub-key-for-ci \
+            -n rahbar \
+            --dry-run=client -o yaml | kubectl apply -f -
       - name: Apply manifests
         run: |
           kubectl apply -f k8s/base/namespace.yaml
           kubectl apply -f k8s/base/configmap.yaml
-          kubectl create secret generic rahbar-secret \
-            --from-literal=GROQ_API_KEY=stub-key-for-ci \
-            -n rahbar
-          kubectl apply -f k8s/base/
+          kubectl apply -f k8s/base/serviceaccounts.yaml
+          kubectl apply -f k8s/base/chroma-statefulset.yaml
+          kubectl apply -f k8s/base/redis-deployment.yaml
+          kubectl apply -f k8s/base/api-deployment.yaml
+          kubectl apply -f k8s/base/ui-deployment.yaml
+          kubectl apply -f k8s/base/indexer-job.yaml
+          kubectl apply -f k8s/base/reindex-cronjob.yaml
+          kubectl apply -f k8s/base/services.yaml
+          kubectl apply -f k8s/base/ingress.yaml
+          kubectl apply -f k8s/base/networkpolicy.yaml
+          kubectl apply -f k8s/base/hpa.yaml
       - name: Patch for CI (use stub provider)
         run: |
           kubectl patch configmap rahbar-config \
