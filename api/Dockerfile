@@ -15,7 +15,8 @@ RUN groupadd --gid 1000 appgroup && \
 
 # Copy and install dependencies first for optimal layer caching
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
 # Copy application source code
 COPY app/ ./app/
