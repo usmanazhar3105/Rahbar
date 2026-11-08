@@ -161,19 +161,30 @@ jobs:
           kubectl patch configmap rahbar-config \
             -n rahbar \
             --patch '{"data":{"LLM_PROVIDER":"stub"}}'
+      - name: Patch image names for CI
+        run: |
+          kubectl set image deployment/api \
+            api=rahbar-api:${{ github.sha }} -n rahbar
+          kubectl set image deployment/ui \
+            ui=rahbar-ui:${{ github.sha }} -n rahbar
+          kubectl set image statefulset/chroma \
+            chroma=chromadb/chroma:0.4.24 -n rahbar
+          kubectl delete job indexer -n rahbar --ignore-not-found
+          kubectl create job indexer-ci --from=cronjob/reindex -n rahbar
+          kubectl set image job/indexer-ci \
+            indexer=rahbar-indexer:${{ github.sha }} -n rahbar
       - name: Debug indexer status
         run: |
           kubectl get pods -n rahbar
-          kubectl describe job indexer -n rahbar
-          kubectl logs job/indexer -n rahbar || true
+          kubectl describe job indexer-ci -n rahbar || true
+          kubectl logs job/indexer-ci -n rahbar || true
       - name: Wait for indexer Job
         run: |
           kubectl wait \
             --for=condition=complete \
-            job/indexer \
+            job/indexer-ci \
             -n rahbar \
-            --timeout=600s || \
-          (kubectl logs job/indexer -n rahbar && exit 1)
+            --timeout=600s
       - name: Wait for api rollout
         run: |
           kubectl rollout status \

@@ -29,8 +29,8 @@ spec:
           emptyDir: {}
       containers:
         - name: api
-          image: DOCKERHUB_USERNAME/rahbar-api:latest
-          imagePullPolicy: IfNotPresent
+          image: rahbar-api:latest
+          imagePullPolicy: Never
           ports:
             - containerPort: 8000
           envFrom:

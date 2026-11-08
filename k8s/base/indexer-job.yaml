@@ -20,8 +20,8 @@ spec:
         runAsUser: 1000
       containers:
         - name: indexer
-          image: DOCKERHUB_USERNAME/rahbar-indexer:latest
-          imagePullPolicy: IfNotPresent
+          image: rahbar-indexer:latest
+          imagePullPolicy: Never
           envFrom:
             - configMapRef:
                 name: rahbar-config

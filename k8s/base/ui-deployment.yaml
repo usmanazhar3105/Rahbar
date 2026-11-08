@@ -23,8 +23,8 @@ spec:
           emptyDir: {}
       containers:
         - name: ui
-          image: DOCKERHUB_USERNAME/rahbar-ui:latest
-          imagePullPolicy: IfNotPresent
+          image: rahbar-ui:latest
+          imagePullPolicy: Never
           ports:
             - containerPort: 8080
           volumeMounts:
