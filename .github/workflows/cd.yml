@@ -2,44 +2,115 @@ name: CD
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+
+permissions:
+  contents: read
 
 jobs:
   test:
+    name: Test
+    runs-on: ubuntu-latest
     permissions:
       contents: read
-    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: pip install -r api/requirements.txt -r indexer/requirements.txt pytest pytest-cov
       - run: |
-          PYTHONPATH=api:indexer LLM_PROVIDER=stub pytest api/tests/ indexer/tests/ \
-            --cov=api --cov=indexer --cov-fail-under=60 -v
+          pip install -r api/requirements.txt
+          pip install -r indexer/requirements.txt
+          pip install pytest pytest-cov
+      - run: |
+          LLM_PROVIDER=stub \
+          CHROMA_HOST=localhost \
+          REDIS_HOST=localhost \
+          EMBED_MODEL=nomic-embed-text \
+          pytest api/tests/ indexer/tests/ \
+            --cov=api --cov=indexer \
+            --cov-fail-under=60 -v
 
   build-push:
+    name: Build and Push
     needs: test
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/login-action@v3
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/rahbar-api:${{ github.sha }} -t ${{ secrets.DOCKERHUB_USERNAME }}/rahbar-api:latest ./api
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/rahbar-indexer:${{ github.sha }} -t ${{ secrets.DOCKERHUB_USERNAME }}/rahbar-indexer:latest ./indexer
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/rahbar-ui:${{ github.sha }} -t ${{ secrets.DOCKERHUB_USERNAME }}/rahbar-ui:latest ./ui
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/rahbar-api:${{ github.sha }}
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/rahbar-api:latest
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/rahbar-indexer:${{ github.sha }}
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/rahbar-indexer:latest
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/rahbar-ui:${{ github.sha }}
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/rahbar-ui:latest
+      - name: Build and push api
+        run: |
+          docker build \
+            -t ${{ secrets.DOCKERHUB_USERNAME }}/rahbar-api:${{ github.sha }} \
+            ./api
+          docker push \
+            ${{ secrets.DOCKERHUB_USERNAME }}/rahbar-api:${{ github.sha }}
+      - name: Build and push indexer
+        run: |
+          docker build \
+            -t ${{ secrets.DOCKERHUB_USERNAME }}/rahbar-indexer:${{ github.sha }} \
+            ./indexer
+          docker push \
+            ${{ secrets.DOCKERHUB_USERNAME }}/rahbar-indexer:${{ github.sha }}
+      - name: Build and push ui
+        run: |
+          docker build \
+            -t ${{ secrets.DOCKERHUB_USERNAME }}/rahbar-ui:${{ github.sha }} \
+            ./ui
+          docker push \
+            ${{ secrets.DOCKERHUB_USERNAME }}/rahbar-ui:${{ github.sha }}
+
+  deploy:
+    name: Deploy
+    needs: build-push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create kind cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: rahbar-cd
+      - name: Pull and load images
+        run: |
+          docker pull \
+            ${{ secrets.DOCKERHUB_USERNAME }}/rahbar-api:${{ github.sha }}
+          docker pull \
+            ${{ secrets.DOCKERHUB_USERNAME }}/rahbar-indexer:${{ github.sha }}
+          docker pull \
+            ${{ secrets.DOCKERHUB_USERNAME }}/rahbar-ui:${{ github.sha }}
+          kind load docker-image \
+            ${{ secrets.DOCKERHUB_USERNAME }}/rahbar-api:${{ github.sha }} \
+            --name rahbar-cd
+          kind load docker-image \
+            ${{ secrets.DOCKERHUB_USERNAME }}/rahbar-indexer:${{ github.sha }} \
+            --name rahbar-cd
+          kind load docker-image \
+            ${{ secrets.DOCKERHUB_USERNAME }}/rahbar-ui:${{ github.sha }} \
+            --name rahbar-cd
+      - name: Apply manifests
+        run: |
+          kubectl apply -f k8s/base/namespace.yaml
+          kubectl apply -f k8s/base/configmap.yaml
+          kubectl create secret generic rahbar-secret \
+            --from-literal=GROQ_API_KEY=${{ secrets.GROQ_API_KEY }} \
+            -n rahbar
+          kubectl apply -f k8s/base/
+      - name: Wait for rollout
+        run: |
+          kubectl rollout status \
+            deployment/api \
+            -n rahbar \
+            --timeout=120s
+      - name: Smoke test
+        run: |
+          curl -f http://localhost/healthz || exit 1
 
