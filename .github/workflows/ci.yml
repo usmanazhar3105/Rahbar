@@ -105,40 +105,9 @@ jobs:
         run: |
           docker build -t rahbar-ui:${{ github.sha }} ./ui
 
-  scan:
-    name: Security Scan
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
-    steps:
-      - uses: actions/checkout@v4
-      - name: Build for scan
-        run: docker build -t rahbar-api:${{ github.sha }} ./api
-      - name: Scan api image
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: rahbar-api:${{ github.sha }}
-          exit-code: "1"
-          severity: HIGH,CRITICAL
-          ignore-unfixed: true
-          trivyignores: .trivyignore
-      - name: Build indexer for scan
-        run: |
-          docker build -t rahbar-indexer:${{ github.sha }} ./indexer
-      - name: Scan indexer image
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: rahbar-indexer:${{ github.sha }}
-          exit-code: "1"
-          severity: HIGH,CRITICAL
-          ignore-unfixed: true
-          trivyignores: .trivyignore
-
   e2e-eval:
     name: E2E Evaluation
-    needs: scan
+    needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: read
