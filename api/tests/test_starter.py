@@ -21,9 +21,10 @@ def client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
 
 
 def test_liveness_answers_without_dependencies(client: TestClient) -> None:
-    r = client.get("/healthz")
-    assert r.status_code == 200
-    assert r.json() == {"status": "alive"}
+    # Liveness probe must never touch dependencies and must always return 200
+    response = client.get("/healthz")
+    assert response.status_code == 200
+    assert response.json() == {"status": "alive"}
 
 
 def test_ask_returns_the_response_contract(client: TestClient) -> None:
