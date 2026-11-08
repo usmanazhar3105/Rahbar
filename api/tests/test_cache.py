@@ -8,6 +8,7 @@ from __future__ import annotations
 from unittest.mock import MagicMock
 
 import pytest
+
 from app.routes.metrics import CACHE_HITS, CACHE_MISSES
 from app.schemas import Answer, Citation
 from app.services.cache import (

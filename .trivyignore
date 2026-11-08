@@ -1,0 +1,7 @@
+# Ignored CVEs - setuptools in python:3.11-slim base image
+# Cannot be fixed by pip upgrade as it is baked into the image
+# Tracked in: https://avd.aquasec.com/nvd/cve-2025-47273
+CVE-2025-47273
+
+# zlib in base image - no fix available yet
+CVE-2026-85091

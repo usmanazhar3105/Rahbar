@@ -78,7 +78,7 @@ class GroqProvider:
         self.temperature = (
             temperature
             if temperature is not None
-            else (settings.temperature if settings else float(os.environ.get("TEMPERATURE", "0.1")))
+            else (settings.temperature if settings else float(os.environ.get("TEMPERATURE", 0.1)))
         )
         self.base_url = (
             base_url

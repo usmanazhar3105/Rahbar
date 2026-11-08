@@ -11,7 +11,7 @@ import tiktoken
 from .models import Chunk, Document
 
 # Fallback encoding if cl100k_base cannot be loaded
-_ENC: Any = None
+_ENC: tiktoken.Encoding | None = None
 try:
     _ENC = tiktoken.get_encoding("cl100k_base")
 except Exception:

@@ -9,6 +9,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pypdf
+
 from pipeline.extract import (
     extract,
     extract_pdf,

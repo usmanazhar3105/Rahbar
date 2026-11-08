@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import httpx
 import pytest
+
 from pipeline.config import IndexerSettings
 from pipeline.embed import (
     OllamaUnreachableError,

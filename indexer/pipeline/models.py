@@ -1,37 +1,40 @@
+"""The shapes passed between stages. Metadata fields are required (section 3.1)."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
 
 
 @dataclass
 class Page:
-    page: int
+    """Text of one page, as extraction produced it."""
+
+    source: str              # file name, e.g. Academic_Rules_Handbook_2026.pdf
+    page: int                # 1-based
     text: str
-    ocr: bool = False
-    source: str = ""
+    ocr: bool = False        # True when this page had no text layer and was OCR'd
 
 
 @dataclass
 class Document:
     source: str
-    doc_version: str = "unknown"
-    superseded: bool = False
+    doc_version: str         # e.g. "2026-06"; from corpus/sources.yaml
+    superseded: bool         # True for an older version of a policy
     pages: list[Page] = field(default_factory=list)
 
 
 @dataclass
 class Chunk:
-    id: str
+    id: str                  # stable: same document + same position gives the same id
     text: str
     source: str
-    section: str
-    page: int | None = None
-    doc_version: str = "unknown"
-    superseded: bool = False
-    embedding: list[float] | None = None
+    section: str             # the heading this chunk sits under, e.g. "5.4 Academic Warning"
+    page: int
+    doc_version: str
+    superseded: bool
 
-    def metadata(self) -> dict[str, Any]:
+    def metadata(self) -> dict[str, str | int | bool]:
+        """Chroma metadata values must be str, int, float or bool."""
         return {
             "source": self.source,
             "section": self.section,

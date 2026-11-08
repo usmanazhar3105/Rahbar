@@ -1,4 +1,3 @@
-# Policy 1: default-deny-all
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -10,11 +9,10 @@ spec:
     - Ingress
     - Egress
 ---
-# Policy 2: allow-dns
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: allow-dns
+  name: allow-dns-egress
   namespace: rahbar
 spec:
   podSelector: {}
@@ -31,7 +29,6 @@ spec:
         - protocol: TCP
           port: 53
 ---
-# Policy 3: allow-ingress-to-ui
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -52,11 +49,10 @@ spec:
         - protocol: TCP
           port: 8080
 ---
-# Policy 4: allow-ui-to-api
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: allow-ui-to-api
+  name: allow-ui-and-ingress-to-api
   namespace: rahbar
 spec:
   podSelector:
@@ -76,11 +72,10 @@ spec:
         - protocol: TCP
           port: 8000
 ---
-# Policy 5: allow-api-to-chroma
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: allow-api-to-chroma
+  name: allow-api-and-indexer-to-chroma
   namespace: rahbar
 spec:
   podSelector:
@@ -100,11 +95,10 @@ spec:
         - protocol: TCP
           port: 8000
 ---
-# Policy 6: allow-api-to-redis
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: allow-api-to-redis
+  name: allow-api-to-redis-only
   namespace: rahbar
 spec:
   podSelector:
@@ -117,11 +111,13 @@ spec:
         - podSelector:
             matchLabels:
               app: api
+        - podSelector:
+            matchLabels:
+              app: indexer
       ports:
         - protocol: TCP
           port: 6379
 ---
-# Policy 7: allow-api-external-egress
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -144,4 +140,18 @@ spec:
       ports:
         - protocol: TCP
           port: 443
+    - to:
+        - podSelector:
+            matchLabels:
+              app: chroma
+      ports:
+        - protocol: TCP
+          port: 8000
+    - to:
+        - podSelector:
+            matchLabels:
+              app: redis
+      ports:
+        - protocol: TCP
+          port: 6379
 

@@ -1,33 +1,41 @@
-# Memory limit 1024Mi: OCR of 300dpi PDF pages 
-# peaks at ~485MiB measured via kubectl top pods
+# Memory limit 1024Mi justified:
+# OCR of 300dpi PDF pages peaks at ~485MiB (kubectl top pods)
+# 2x headroom gives 1024Mi limit
+# OOMKill exits with code 137 (128 + SIGKILL)
+
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: indexer
   namespace: rahbar
-  labels:
-    app: indexer
 spec:
   backoffLimit: 3
   template:
-    metadata:
-      labels:
-        app: indexer
     spec:
       serviceAccountName: indexer-sa
+      automountServiceAccountToken: false
       restartPolicy: OnFailure
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
       containers:
         - name: indexer
-          image: rahbar-indexer:local
-          imagePullPolicy: IfNotPresent
+          image: rahbar-indexer:latest
+          imagePullPolicy: Never
           envFrom:
             - configMapRef:
                 name: rahbar-config
+          env:
+            - name: GROQ_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: rahbar-secret
+                  key: GROQ_API_KEY
           resources:
             requests:
-              cpu: 200m
-              memory: 512Mi
+              cpu: "200m"
+              memory: "512Mi"
             limits:
-              cpu: 1000m
-              memory: 1024Mi
+              cpu: "1000m"
+              memory: "1024Mi"
 

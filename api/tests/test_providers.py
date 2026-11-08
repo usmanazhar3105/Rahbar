@@ -10,6 +10,7 @@ from unittest.mock import patch
 
 import httpx
 import pytest
+
 from app.providers.llm.factory import get_provider
 from app.providers.llm.hosted import GroqProvider
 from app.providers.llm.stub import StubProvider

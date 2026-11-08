@@ -3,8 +3,6 @@ kind: HorizontalPodAutoscaler
 metadata:
   name: api
   namespace: rahbar
-  labels:
-    app: api
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
