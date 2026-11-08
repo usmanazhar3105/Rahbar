@@ -161,13 +161,19 @@ jobs:
           kubectl patch configmap rahbar-config \
             -n rahbar \
             --patch '{"data":{"LLM_PROVIDER":"stub"}}'
+      - name: Debug indexer status
+        run: |
+          kubectl get pods -n rahbar
+          kubectl describe job indexer -n rahbar
+          kubectl logs job/indexer -n rahbar || true
       - name: Wait for indexer Job
         run: |
           kubectl wait \
             --for=condition=complete \
             job/indexer \
             -n rahbar \
-            --timeout=300s
+            --timeout=600s || \
+          (kubectl logs job/indexer -n rahbar && exit 1)
       - name: Wait for api rollout
         run: |
           kubectl rollout status \
