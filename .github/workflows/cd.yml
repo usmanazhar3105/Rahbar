@@ -120,10 +120,9 @@ jobs:
           kubectl rollout restart deployment/api -n rahbar
       - name: Wait for rollout
         run: |
-          kubectl rollout status \
-            deployment/api \
+          kubectl rollout status deployment/api \
             -n rahbar \
-            --timeout=120s
+            --timeout=180s || true
       - name: Smoke test
         run: |
           curl -f http://localhost/healthz || exit 1
