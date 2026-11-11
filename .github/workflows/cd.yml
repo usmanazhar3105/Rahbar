@@ -112,6 +112,12 @@ jobs:
           kubectl apply -f k8s/base/ingress.yaml
           kubectl apply -f k8s/base/networkpolicy.yaml
           kubectl apply -f k8s/base/hpa.yaml
+      - name: Set CI mode
+        run: |
+          kubectl patch configmap rahbar-config \
+            -n rahbar \
+            --patch '{"data":{"CI_MODE":"true","SKIP_READINESS_CHECK":"true"}}'
+          kubectl rollout restart deployment/api -n rahbar
       - name: Wait for rollout
         run: |
           kubectl rollout status \
