@@ -4,6 +4,7 @@ metadata:
   name: rahbar-config
   namespace: rahbar
 data:
+  RETRIEVER: "chroma"
   CHROMA_HOST: "chroma"
   CHROMA_COLLECTION: "rahbar_docs"
   REDIS_HOST: "redis"
