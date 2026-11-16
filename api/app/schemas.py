@@ -41,11 +41,11 @@ class Citation(BaseModel):
 class Answer(BaseModel):
     """The model's output contract. Send its JSON schema to the model, then validate."""
 
-    reasoning: str
+    reasoning: str = ""
     answer: str
-    citations: list[Citation]
-    answered_from_context: bool
-    confidence: Literal["high", "medium", "low"]
+    citations: list[Citation] = []
+    answered_from_context: bool = True
+    confidence: Literal["high", "medium", "low"] = "high"
 
 
 class RetrievedRef(BaseModel):

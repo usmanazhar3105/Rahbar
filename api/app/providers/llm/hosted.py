@@ -98,10 +98,21 @@ class GroqProvider:
         else:
             evidence_text = "(No evidence passages retrieved)"
 
+        schema_format = (
+            'Respond ONLY with a valid JSON object with these EXACT keys:\n'
+            '{\n'
+            '  "reasoning": "Brief explanation grounded strictly in the evidence",\n'
+            '  "answer": "Direct answer to the question",\n'
+            '  "citations": [{"source": "filename", "section": "section name", "page": 1}],\n'
+            '  "answered_from_context": true,\n'
+            '  "confidence": "high"\n'
+            '}'
+        )
+
         user_content = (
             f"Evidence:\n{evidence_text}\n\n"
             f"Question: {question}\n\n"
-            "Respond in JSON only. No prose before or after the JSON."
+            f"{schema_format}\n"
         )
 
         if reminder:
@@ -153,6 +164,13 @@ class GroqProvider:
             data = self._call_api(user_msg)
             content = data["choices"][0]["message"]["content"]
             parsed_json = json.loads(content)
+            if not parsed_json.get("citations") and passages and parsed_json.get("answered_from_context", True):
+                top_p = passages[0]
+                parsed_json["citations"] = [{
+                    "source": top_p.source,
+                    "section": top_p.section,
+                    "page": top_p.page,
+                }]
             return Answer.model_validate(parsed_json)
         except Exception as first_exc:
             log.warning("Groq validation failed on attempt 1 (%s). Retrying once...", first_exc)
@@ -168,6 +186,13 @@ class GroqProvider:
             data = self._call_api(retry_user_msg)
             content = data["choices"][0]["message"]["content"]
             parsed_json = json.loads(content)
+            if not parsed_json.get("citations") and passages and parsed_json.get("answered_from_context", True):
+                top_p = passages[0]
+                parsed_json["citations"] = [{
+                    "source": top_p.source,
+                    "section": top_p.section,
+                    "page": top_p.page,
+                }]
             return Answer.model_validate(parsed_json)
         except Exception as retry_exc:
             log.error("Groq validation failed on retry attempt 2 (%s). Returning safe fallback.", retry_exc)
