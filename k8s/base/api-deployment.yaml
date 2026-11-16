@@ -18,6 +18,7 @@ spec:
       labels:
         app: api
     spec:
+      enableServiceLinks: false
       serviceAccountName: api-sa
       automountServiceAccountToken: false
       terminationGracePeriodSeconds: 30

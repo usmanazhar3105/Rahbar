@@ -12,7 +12,15 @@ from dataclasses import dataclass, field
 
 
 def _int(name: str, default: int) -> int:
-    return int(os.environ.get(name, default))
+    val = os.environ.get(name)
+    if not val:
+        return default
+    if ":" in val:
+        val = val.rsplit(":", 1)[-1]
+    try:
+        return int(val)
+    except ValueError:
+        return default
 
 
 def _float(name: str, default: float) -> float:

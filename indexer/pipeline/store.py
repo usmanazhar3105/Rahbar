@@ -39,11 +39,21 @@ def flush_redis_cache(redis_host: str) -> None:
         import redis
 
         r_host = redis_host
-        r_port = int(os.environ.get("REDIS_PORT", 6379))
+        r_val = os.environ.get("REDIS_PORT", "6379")
+        if ":" in r_val:
+            r_val = r_val.rsplit(":", 1)[-1]
+        try:
+            r_port = int(r_val)
+        except ValueError:
+            r_port = 6379
+
         if ":" in r_host:
             parts = r_host.split(":")
             r_host = parts[0]
-            r_port = int(parts[1])
+            try:
+                r_port = int(parts[1])
+            except ValueError:
+                pass
 
         client = redis.Redis(host=r_host, port=r_port, socket_timeout=2.0)
         client.flushdb()
