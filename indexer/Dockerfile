@@ -31,8 +31,11 @@ RUN pip install --upgrade pip setuptools wheel && \
 # Copy indexer pipeline code
 COPY pipeline/ ./pipeline/
 
+# Copy corpus documents for indexing
+COPY corpus/ /corpus/
+
 # Ensure application files are owned by the non-root user
-RUN chown -R appuser:appgroup /app
+RUN chown -R appuser:appgroup /app /corpus
 
 # Switch to non-root user for Kubernetes security context compliance
 USER 1000
