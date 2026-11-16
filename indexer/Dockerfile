@@ -38,5 +38,5 @@ RUN chown -R appuser:appgroup /app
 USER 1000
 
 # Exec form ensures signals reach Python PID 1
-CMD ["python", "-m", "pipeline.main"]
+CMD ["python", "-m", "pipeline.run"]
 
