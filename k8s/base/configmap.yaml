@@ -5,6 +5,7 @@ metadata:
   namespace: rahbar
 data:
   CHROMA_HOST: "chroma"
+  CHROMA_COLLECTION: "rahbar_docs"
   REDIS_HOST: "redis"
   EMBED_MODEL: "nomic-embed-text"
   TOP_K: "5"
