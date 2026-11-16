@@ -23,7 +23,7 @@ spec:
       automountServiceAccountToken: false
       containers:
         - name: chroma
-          image: chromadb/chroma:0.4.24
+          image: chromadb/chroma:latest
           ports:
             - containerPort: 8000
           volumeMounts:
