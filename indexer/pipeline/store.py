@@ -108,8 +108,6 @@ def store_chunks(
         name=collection_name,
         metadata=col_meta,
     )
-    # Explicitly call modify to update/store collection-level metadata
-    collection.modify(metadata=col_meta)
 
     if chunks:
         ids = [c["chunk_id"] for c in chunks]
