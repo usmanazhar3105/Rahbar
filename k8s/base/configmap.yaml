@@ -14,5 +14,7 @@ data:
   CACHE_THRESHOLD: "0.92"
   TEMPERATURE: "0.1"
   LLM_PROVIDER: "groq"
+  LLM_MODEL: "llama-3.1-8b-instant"
+  GROQ_MODEL: "llama-3.1-8b-instant"
   OLLAMA_HOST: "http://host.minikube.internal:11434"
 
