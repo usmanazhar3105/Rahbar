@@ -3,6 +3,10 @@ kind: Service
 metadata:
   name: api-service
   namespace: rahbar
+  labels:
+    app.kubernetes.io/name: rahbar
+    app.kubernetes.io/component: api
+    app: api
 spec:
   type: ClusterIP
   selector:
@@ -11,12 +15,19 @@ spec:
     - name: http
       port: 8000
       targetPort: 8000
+    - name: metrics
+      port: 9090
+      targetPort: 8000
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: ui-service
   namespace: rahbar
+  labels:
+    app.kubernetes.io/name: rahbar
+    app.kubernetes.io/component: ui
+    app: ui
 spec:
   type: ClusterIP
   selector:
@@ -31,6 +42,10 @@ kind: Service
 metadata:
   name: chroma
   namespace: rahbar
+  labels:
+    app.kubernetes.io/name: rahbar
+    app.kubernetes.io/component: vectordb
+    app: chroma
 spec:
   type: ClusterIP
   clusterIP: None
@@ -46,6 +61,10 @@ kind: Service
 metadata:
   name: redis
   namespace: rahbar
+  labels:
+    app.kubernetes.io/name: rahbar
+    app.kubernetes.io/component: cache
+    app: redis
 spec:
   type: ClusterIP
   selector:
@@ -54,4 +73,3 @@ spec:
     - name: redis
       port: 6379
       targetPort: 6379
-

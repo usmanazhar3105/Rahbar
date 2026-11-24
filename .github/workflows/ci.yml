@@ -104,6 +104,13 @@ jobs:
       - name: Build ui
         run: |
           docker build -t rahbar-ui:${{ github.sha }} ./ui
+      - name: Run Trivy vulnerability scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: rahbar-api:${{ github.sha }}
+          format: table
+          exit-code: 0
+          severity: CRITICAL,HIGH
 
   e2e-eval:
     name: E2E Evaluation
@@ -172,4 +179,10 @@ jobs:
           kubectl get pods -n rahbar
           kubectl get services -n rahbar
           echo "E2E cluster setup verified"
+      - name: Run eval runner gate
+        run: |
+          kubectl wait --for=condition=ready pod -l app=api -n rahbar --timeout=120s
+          kubectl port-forward -n rahbar svc/api-service 8000:8000 &
+          sleep 5
+          python eval/run_eval.py --api http://localhost:8000 --golden eval/fixtures/golden.fixture.yaml --baseline eval/baseline.json
 

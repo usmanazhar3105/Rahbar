@@ -1,6 +1,6 @@
-# Memory limit 1024Mi justified:
+# Memory limit 1024Mi / 1Gi justified:
 # OCR of 300dpi PDF pages peaks at ~485MiB (kubectl top pods)
-# 2x headroom gives 1024Mi limit
+# 2x headroom gives 1Gi limit
 # OOMKill exits with code 137 (128 + SIGKILL)
 
 apiVersion: batch/v1
@@ -8,9 +8,17 @@ kind: Job
 metadata:
   name: indexer
   namespace: rahbar
+  labels:
+    app.kubernetes.io/name: rahbar
+    app.kubernetes.io/component: indexer
 spec:
   backoffLimit: 3
   template:
+    metadata:
+      labels:
+        app: indexer
+        app.kubernetes.io/name: rahbar
+        app.kubernetes.io/component: indexer
     spec:
       enableServiceLinks: false
       serviceAccountName: indexer-sa
@@ -19,14 +27,30 @@ spec:
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
+      volumes:
+        - name: rahbar-data
+          persistentVolumeClaim:
+            claimName: rahbar-data
       containers:
         - name: indexer
           image: rahbar-indexer:latest
           imagePullPolicy: Never
+          volumeMounts:
+            - name: rahbar-data
+              mountPath: /data
           envFrom:
             - configMapRef:
                 name: rahbar-config
           env:
+            - name: RUN_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: COLLECTION_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: rahbar-config
+                  key: COLLECTION_NAME
             - name: GROQ_API_KEY
               valueFrom:
                 secretKeyRef:
@@ -34,9 +58,8 @@ spec:
                   key: GROQ_API_KEY
           resources:
             requests:
-              cpu: "200m"
+              cpu: "250m"
               memory: "512Mi"
             limits:
               cpu: "1000m"
-              memory: "1024Mi"
-
+              memory: "1Gi"

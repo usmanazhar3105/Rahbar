@@ -1,0 +1,6 @@
+# Release gate thresholds for RAHBAR pipeline candidate evaluation
+
+recall_at_5_min_drop: 2.0        # candidate recall@5 must not drop more than 2 points vs baseline
+faithfulness_min: 0.75            # absolute minimum faithfulness
+p95_latency_max_ms: 3000          # p95 latency ceiling
+abstention_correctness_min: 1.0   # must not drop below baseline

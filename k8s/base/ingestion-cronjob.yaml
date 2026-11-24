@@ -1,0 +1,67 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: ingestion
+  namespace: rahbar
+  labels:
+    app.kubernetes.io/name: rahbar
+    app.kubernetes.io/component: indexer
+spec:
+  schedule: "0 2 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 3
+      template:
+        metadata:
+          labels:
+            app: ingestion-cronjob
+            app.kubernetes.io/name: rahbar
+            app.kubernetes.io/component: indexer
+        spec:
+          enableServiceLinks: false
+          serviceAccountName: indexer-sa
+          automountServiceAccountToken: false
+          restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+          volumes:
+            - name: rahbar-data
+              persistentVolumeClaim:
+                claimName: rahbar-data
+          containers:
+            - name: indexer
+              image: rahbar-indexer:latest
+              imagePullPolicy: Never
+              command: ["python", "-m", "pipeline.run"]
+              volumeMounts:
+                - name: rahbar-data
+                  mountPath: /data
+              envFrom:
+                - configMapRef:
+                    name: rahbar-config
+              env:
+                - name: RUN_ID
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.name
+                - name: COLLECTION_NAME
+                  valueFrom:
+                    configMapKeyRef:
+                      name: rahbar-config
+                      key: COLLECTION_NAME
+                - name: GROQ_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: rahbar-secret
+                      key: GROQ_API_KEY
+              resources:
+                requests:
+                  cpu: "250m"
+                  memory: "512Mi"
+                limits:
+                  cpu: "1000m"
+                  memory: "1Gi"

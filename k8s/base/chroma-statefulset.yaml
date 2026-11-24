@@ -8,6 +8,10 @@ kind: StatefulSet
 metadata:
   name: chroma
   namespace: rahbar
+  labels:
+    app.kubernetes.io/name: rahbar
+    app.kubernetes.io/component: vectordb
+    app: chroma
 spec:
   serviceName: chroma
   replicas: 1
@@ -18,6 +22,8 @@ spec:
     metadata:
       labels:
         app: chroma
+        app.kubernetes.io/name: rahbar
+        app.kubernetes.io/component: vectordb
     spec:
       serviceAccountName: indexer-sa
       automountServiceAccountToken: false
@@ -26,15 +32,16 @@ spec:
           image: chromadb/chroma:latest
           ports:
             - containerPort: 8000
+              name: http
           volumeMounts:
             - name: chroma-data
-              mountPath: /chroma/chroma
+              mountPath: /chroma/data
           resources:
             requests:
-              cpu: "100m"
-              memory: "256Mi"
+              cpu: "250m"
+              memory: "512Mi"
             limits:
-              cpu: "500m"
+              cpu: "1000m"
               memory: "1Gi"
   volumeClaimTemplates:
     - metadata:
@@ -44,4 +51,3 @@ spec:
         resources:
           requests:
             storage: 2Gi
-

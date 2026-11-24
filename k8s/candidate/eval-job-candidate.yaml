@@ -1,0 +1,65 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: eval-candidate
+  namespace: rahbar
+  labels:
+    app.kubernetes.io/name: rahbar
+    app.kubernetes.io/component: evaluation
+    app: eval-candidate-job
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app: eval-candidate-job
+        app.kubernetes.io/name: rahbar
+        app.kubernetes.io/component: evaluation
+    spec:
+      enableServiceLinks: false
+      serviceAccountName: indexer-sa
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      volumes:
+        - name: rahbar-data
+          persistentVolumeClaim:
+            claimName: rahbar-data
+      containers:
+        - name: evaluator
+          image: rahbar-indexer:latest
+          imagePullPolicy: Never
+          command:
+            - "python"
+            - "eval/run_eval.py"
+            - "--base-url"
+            - "http://api-candidate-service:8001/api"
+            - "--collection"
+            - "rahbar_candidate"
+            - "--output"
+            - "/data/results/"
+          volumeMounts:
+            - name: rahbar-data
+              mountPath: /data
+          envFrom:
+            - configMapRef:
+                name: rahbar-config
+          env:
+            - name: CHROMA_COLLECTION
+              value: "rahbar_candidate"
+            - name: COLLECTION_NAME
+              value: "rahbar_candidate"
+            - name: GROQ_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: rahbar-secret
+                  key: GROQ_API_KEY
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"

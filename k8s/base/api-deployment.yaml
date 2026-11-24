@@ -3,6 +3,10 @@ kind: Deployment
 metadata:
   name: api
   namespace: rahbar
+  labels:
+    app.kubernetes.io/name: rahbar
+    app.kubernetes.io/component: api
+    app: api
 spec:
   replicas: 3
   selector:
@@ -17,6 +21,8 @@ spec:
     metadata:
       labels:
         app: api
+        app.kubernetes.io/name: rahbar
+        app.kubernetes.io/component: api
     spec:
       enableServiceLinks: false
       serviceAccountName: api-sa
@@ -28,12 +34,17 @@ spec:
       volumes:
         - name: tmp
           emptyDir: {}
+        - name: rahbar-data
+          persistentVolumeClaim:
+            claimName: rahbar-data
+            readOnly: true
       containers:
         - name: api
           image: rahbar-api:latest
           imagePullPolicy: Never
           ports:
             - containerPort: 8000
+              name: http
           envFrom:
             - configMapRef:
                 name: rahbar-config
@@ -46,6 +57,9 @@ spec:
           volumeMounts:
             - name: tmp
               mountPath: /tmp
+            - name: rahbar-data
+              mountPath: /data
+              readOnly: true
           securityContext:
             readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false
@@ -54,11 +68,11 @@ spec:
                 - ALL
           resources:
             requests:
-              cpu: "100m"
-              memory: "256Mi"
-            limits:
-              cpu: "500m"
+              cpu: "250m"
               memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
           lifecycle:
             preStop:
               exec:

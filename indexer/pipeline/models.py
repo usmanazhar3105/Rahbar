@@ -32,13 +32,23 @@ class Chunk:
     page: int
     doc_version: str
     superseded: bool
+    doc_id: str = ""
+    raw_text_hash: str = ""
+    archived: bool = False
 
     def metadata(self) -> dict[str, str | int | bool]:
         """Chroma metadata values must be str, int, float or bool."""
-        return {
+        m: dict[str, str | int | bool] = {
             "source": self.source,
             "section": self.section,
             "page": self.page,
             "doc_version": self.doc_version,
             "superseded": self.superseded,
         }
+        if self.doc_id:
+            m["doc_id"] = self.doc_id
+        if self.raw_text_hash:
+            m["raw_text_hash"] = self.raw_text_hash
+        if self.archived:
+            m["archived"] = self.archived
+        return m

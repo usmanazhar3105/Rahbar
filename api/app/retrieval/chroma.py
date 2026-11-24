@@ -7,6 +7,7 @@ unless requested, applies a relevance floor, and maps results to Passage objects
 from __future__ import annotations
 
 import logging
+import os
 import re
 from typing import Any
 
@@ -128,9 +129,22 @@ class ChromaRetriever:
 
         collection = self.client.get_collection(self.settings.collection)
 
-        # Filter out superseded documents unless query asks for old versions
+        # Filter archived=false in all retrieval queries (plus superseded unless asked)
         filter_superseded = should_filter_superseded(question)
-        where_filter = {"superseded": False} if filter_superseded else None
+        where_filter: dict[str, Any] | None = None
+
+        if os.environ.get("FILTER_ARCHIVED_IN_WHERE", "false").lower() == "true":
+            if filter_superseded:
+                where_filter = {
+                    "$and": [
+                        {"archived": False},
+                        {"superseded": False},
+                    ]
+                }
+            else:
+                where_filter = {"archived": False}
+        else:
+            where_filter = {"superseded": False} if filter_superseded else None
 
         query_kwargs: dict[str, Any] = {
             "query_embeddings": [query_vector],
@@ -151,6 +165,9 @@ class ChromaRetriever:
 
         for chunk_id, doc_text, meta, distance in zip(ids_list, docs_list, metas_list, dists_list):
             meta = meta or {}
+            # Filter archived=false in all retrieval queries
+            if meta.get("archived", False):
+                continue
             # Chroma cosine distance: similarity = 1 - distance
             similarity = 1.0 - float(distance)
 

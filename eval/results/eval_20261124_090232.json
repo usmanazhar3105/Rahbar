@@ -1,0 +1,211 @@
+{
+  "timestamp": "20261124_090232",
+  "config": {
+    "base_url": "http://rahbar.local/api",
+    "golden": "eval\\golden.jsonl",
+    "seed": 42
+  },
+  "run1": {
+    "embedding": {
+      "mean_sim_paraphrase": 0.8679,
+      "mean_sim_unrelated": 0.1035,
+      "embedding_gap": 0.7643,
+      "embed_time_per_chunk_sec": 0.00046,
+      "determinism_max_diff": 0.0
+    },
+    "retrieval": {
+      "baseline": {
+        "recall@3": 0.95,
+        "recall@5": 1.0,
+        "mrr": 0.8875,
+        "ndcg@5": 0.9162
+      },
+      "noise_test": {
+        "metrics": {
+          "recall@3": 0.95,
+          "recall@5": 1.0,
+          "mrr": 0.8875,
+          "ndcg@5": 0.9162
+        },
+        "delta": {
+          "recall@3_delta": 0.0,
+          "recall@5_delta": 0.0,
+          "mrr_delta": 0.0,
+          "ndcg@5_delta": 0.0
+        }
+      },
+      "typo_test": {
+        "metrics": {
+          "recall@3": 0.95,
+          "recall@5": 1.0,
+          "mrr": 0.8875,
+          "ndcg@5": 0.9162
+        },
+        "delta": {
+          "recall@3_delta": 0.0,
+          "recall@5_delta": 0.0,
+          "mrr_delta": 0.0,
+          "ndcg@5_delta": 0.0
+        }
+      }
+    },
+    "e2e": {
+      "faithfulness_rate": 1.0,
+      "abstention_rate": 1.0,
+      "citation_validity": 1.0,
+      "latency_p50_sec": 0.0,
+      "latency_p95_sec": 0.0,
+      "llm_judge_agreement": 1.0,
+      "llm_judge_table": [
+        {
+          "id": "q001",
+          "question": "How much attendance do I need to sit in ...",
+          "human_label": true,
+          "llm_judge": true,
+          "agreement": true
+        },
+        {
+          "id": "q002",
+          "question": "What CGPA puts me on academic warning?",
+          "human_label": true,
+          "llm_judge": true,
+          "agreement": true
+        },
+        {
+          "id": "q003",
+          "question": "How many warnings can I get before getti...",
+          "human_label": true,
+          "llm_judge": true,
+          "agreement": true
+        },
+        {
+          "id": "q004",
+          "question": "What grade do I get if my attendance is ...",
+          "human_label": true,
+          "llm_judge": true,
+          "agreement": true
+        },
+        {
+          "id": "q005",
+          "question": "What semester GPA do I need to make the ...",
+          "human_label": true,
+          "llm_judge": true,
+          "agreement": true
+        },
+        {
+          "id": "q021",
+          "question": "If I got a C- back under the 2023 underg...",
+          "human_label": true,
+          "llm_judge": true,
+          "agreement": true
+        }
+      ]
+    }
+  },
+  "run2": {
+    "embedding": {
+      "mean_sim_paraphrase": 0.8679,
+      "mean_sim_unrelated": 0.1035,
+      "embedding_gap": 0.7643,
+      "embed_time_per_chunk_sec": 0.00033,
+      "determinism_max_diff": 0.0
+    },
+    "retrieval": {
+      "baseline": {
+        "recall@3": 0.95,
+        "recall@5": 1.0,
+        "mrr": 0.8875,
+        "ndcg@5": 0.9162
+      },
+      "noise_test": {
+        "metrics": {
+          "recall@3": 0.95,
+          "recall@5": 1.0,
+          "mrr": 0.8875,
+          "ndcg@5": 0.9162
+        },
+        "delta": {
+          "recall@3_delta": 0.0,
+          "recall@5_delta": 0.0,
+          "mrr_delta": 0.0,
+          "ndcg@5_delta": 0.0
+        }
+      },
+      "typo_test": {
+        "metrics": {
+          "recall@3": 0.95,
+          "recall@5": 1.0,
+          "mrr": 0.8875,
+          "ndcg@5": 0.9162
+        },
+        "delta": {
+          "recall@3_delta": 0.0,
+          "recall@5_delta": 0.0,
+          "mrr_delta": 0.0,
+          "ndcg@5_delta": 0.0
+        }
+      }
+    },
+    "e2e": {
+      "faithfulness_rate": 1.0,
+      "abstention_rate": 1.0,
+      "citation_validity": 1.0,
+      "latency_p50_sec": 0.0,
+      "latency_p95_sec": 0.0,
+      "llm_judge_agreement": 1.0,
+      "llm_judge_table": [
+        {
+          "id": "q001",
+          "question": "How much attendance do I need to sit in ...",
+          "human_label": true,
+          "llm_judge": true,
+          "agreement": true
+        },
+        {
+          "id": "q002",
+          "question": "What CGPA puts me on academic warning?",
+          "human_label": true,
+          "llm_judge": true,
+          "agreement": true
+        },
+        {
+          "id": "q003",
+          "question": "How many warnings can I get before getti...",
+          "human_label": true,
+          "llm_judge": true,
+          "agreement": true
+        },
+        {
+          "id": "q004",
+          "question": "What grade do I get if my attendance is ...",
+          "human_label": true,
+          "llm_judge": true,
+          "agreement": true
+        },
+        {
+          "id": "q005",
+          "question": "What semester GPA do I need to make the ...",
+          "human_label": true,
+          "llm_judge": true,
+          "agreement": true
+        },
+        {
+          "id": "q021",
+          "question": "If I got a C- back under the 2023 underg...",
+          "human_label": true,
+          "llm_judge": true,
+          "agreement": true
+        }
+      ]
+    }
+  },
+  "stochasticity_deltas": {
+    "embedding_gap_delta": 0.0,
+    "recall@5_delta": 0.0,
+    "mrr_delta": 0.0,
+    "faithfulness_delta": 0.0,
+    "abstention_delta": 0.0
+  },
+  "gate_passed": true,
+  "failure_reasons": []
+}

@@ -3,13 +3,23 @@ kind: CronJob
 metadata:
   name: reindex
   namespace: rahbar
+  labels:
+    app.kubernetes.io/name: rahbar
+    app.kubernetes.io/component: indexer
 spec:
-  schedule: "0 2 * * 0"
+  schedule: "0 2 * * *"
   concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
   jobTemplate:
     spec:
       backoffLimit: 3
       template:
+        metadata:
+          labels:
+            app: reindex
+            app.kubernetes.io/name: rahbar
+            app.kubernetes.io/component: indexer
         spec:
           enableServiceLinks: false
           serviceAccountName: indexer-sa
@@ -18,14 +28,30 @@ spec:
           securityContext:
             runAsNonRoot: true
             runAsUser: 1000
+          volumes:
+            - name: rahbar-data
+              persistentVolumeClaim:
+                claimName: rahbar-data
           containers:
             - name: indexer
               image: rahbar-indexer:latest
               imagePullPolicy: Never
+              volumeMounts:
+                - name: rahbar-data
+                  mountPath: /data
               envFrom:
                 - configMapRef:
                     name: rahbar-config
               env:
+                - name: RUN_ID
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.name
+                - name: COLLECTION_NAME
+                  valueFrom:
+                    configMapKeyRef:
+                      name: rahbar-config
+                      key: COLLECTION_NAME
                 - name: GROQ_API_KEY
                   valueFrom:
                     secretKeyRef:
@@ -33,9 +59,8 @@ spec:
                       key: GROQ_API_KEY
               resources:
                 requests:
-                  cpu: "200m"
+                  cpu: "250m"
                   memory: "512Mi"
                 limits:
                   cpu: "1000m"
-                  memory: "1024Mi"
-
+                  memory: "1Gi"

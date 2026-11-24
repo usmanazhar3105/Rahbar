@@ -4,16 +4,17 @@ namespace: rahbar
 resources:
   - namespace.yaml
   - serviceaccounts.yaml
+  - pvc.yaml
   - configmap.yaml
   - secret-placeholder.yaml
   - api-deployment.yaml
   - ui-deployment.yaml
   - chroma-statefulset.yaml
   - redis-deployment.yaml
-  - indexer-job.yaml
-  - reindex-cronjob.yaml
+  - ingestion-job.yaml
+  - ingestion-cronjob.yaml
+  - eval-job.yaml
   - services.yaml
   - ingress.yaml
   - networkpolicy.yaml
   - hpa.yaml
-

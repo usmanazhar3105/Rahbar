@@ -1,0 +1,66 @@
+{
+  "batch": "B",
+  "count": 10,
+  "files": [
+    {
+      "filename": "exact_dup_1.txt",
+      "expected_check": "uniqueness (baseline)",
+      "expected_disposition": "pass (first occurrence)",
+      "description": "Copy of baseline batch_a document"
+    },
+    {
+      "filename": "exact_dup_2.txt",
+      "expected_check": "uniqueness",
+      "expected_disposition": "quarantine (exact duplicate / SHA-256 collision)",
+      "description": "Exact duplicate of exact_dup_1.txt"
+    },
+    {
+      "filename": "near_dup.txt",
+      "expected_check": "uniqueness",
+      "expected_disposition": "quarantine (near-duplicate cosine similarity >0.95)",
+      "description": "Paraphrased document with ~0.96 cosine similarity"
+    },
+    {
+      "filename": "truncated.txt",
+      "expected_check": "completeness",
+      "expected_disposition": "quarantine (truncated at 300 chars ending with \u2026)",
+      "description": "Text cut at 300 chars ending with ellipsis"
+    },
+    {
+      "filename": "missing_meta.txt",
+      "expected_check": "completeness",
+      "expected_disposition": "quarantine (missing metadata 'date' field)",
+      "description": "Metadata missing mandatory 'date' field"
+    },
+    {
+      "filename": "newer_version.txt",
+      "expected_check": "recency",
+      "expected_disposition": "recency check / archive triggering",
+      "description": "Same source+title as baseline with 2027 date (newer version)"
+    },
+    {
+      "filename": "injected.txt",
+      "expected_check": "security / guardrail",
+      "expected_disposition": "pass verify, quarantine/block in guardrail inspection",
+      "description": "Buried adversarial prompt injection attack in section 3"
+    },
+    {
+      "filename": "corrupt.bin",
+      "expected_check": "quality",
+      "expected_disposition": "quarantine (garbled text >30% non-ASCII)",
+      "description": "Binary file containing non-ASCII byte sequences"
+    },
+    {
+      "filename": "empty.txt",
+      "expected_check": "quality",
+      "expected_disposition": "quarantine (empty text / 0 bytes)",
+      "description": "Empty zero-byte document"
+    },
+    {
+      "filename": "valid_new.txt",
+      "expected_check": "none",
+      "expected_disposition": "pass (all 4 verification checks pass cleanly)",
+      "description": "Clean, new well-formed policy document"
+    }
+  ]
+}

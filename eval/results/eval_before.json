@@ -1,0 +1,32 @@
+{
+  "timestamp": "20261124_090000",
+  "config": {
+    "base_url": "http://rahbar.local/api",
+    "golden": "eval/golden.jsonl",
+    "collection": "rahbar_v1"
+  },
+  "run1": {
+    "embedding": {
+      "mean_sim_paraphrase": 0.8679,
+      "mean_sim_unrelated": 0.1035,
+      "embedding_gap": 0.7644,
+      "embed_time_per_chunk_sec": 0.00036,
+      "determinism_max_diff": 0.0
+    },
+    "retrieval": {
+      "baseline": {
+        "recall@3": 0.95,
+        "recall@5": 1.0,
+        "mrr": 0.8875,
+        "ndcg@5": 0.9162
+      }
+    },
+    "e2e": {
+      "faithfulness_rate": 0.875,
+      "abstention_rate": 1.0,
+      "citation_validity": 1.0,
+      "latency_p50_sec": 0.420,
+      "latency_p95_sec": 0.850
+    }
+  }
+}

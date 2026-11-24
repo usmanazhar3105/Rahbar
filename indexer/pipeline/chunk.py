@@ -220,8 +220,34 @@ def chunk_pages(
     return chunks
 
 
-def chunk(doc: Document, size: int, overlap: int) -> list[Chunk]:
+def chunk(doc: Document | dict[str, Any], size: int, overlap: int) -> list[Chunk]:
     """Adapter bridging the indexer Document pipeline to chunk_pages."""
+    doc_id = ""
+    raw_text_hash = ""
+    archived = False
+
+    if isinstance(doc, dict):
+        doc_id = str(doc.get("doc_id", ""))
+        raw_text_hash = str(doc.get("raw_text_hash", ""))
+        archived = bool(doc.get("archived", False))
+
+        if "_extracted_doc" in doc:
+            doc_obj = doc["_extracted_doc"]
+        elif "_doc" in doc:
+            doc_obj = doc["_doc"]
+        else:
+            meta = doc.get("metadata", {})
+            source = str(meta.get("source", "unknown"))
+            doc_version = str(meta.get("date", "unknown"))
+            doc_obj = Document(
+                source=source,
+                doc_version=doc_version,
+                superseded=bool(doc.get("superseded", False)),
+                pages=[Page(source=source, page=1, text=str(doc.get("text", "")))],
+            )
+    else:
+        doc_obj = doc
+
     page_dicts = [
         {
             "page_num": p.page,
@@ -229,13 +255,13 @@ def chunk(doc: Document, size: int, overlap: int) -> list[Chunk]:
             "had_ocr": p.ocr,
             "source": p.source,
         }
-        for p in doc.pages
+        for p in doc_obj.pages
     ]
 
     chunk_dicts = chunk_pages(
         pages=page_dicts,
-        doc_version=doc.doc_version,
-        superseded=doc.superseded,
+        doc_version=doc_obj.doc_version,
+        superseded=doc_obj.superseded,
         chunk_size=size,
         overlap=overlap,
     )
@@ -249,6 +275,9 @@ def chunk(doc: Document, size: int, overlap: int) -> list[Chunk]:
             page=cd["page"],
             doc_version=cd["doc_version"],
             superseded=cd["superseded"],
+            doc_id=doc_id,
+            raw_text_hash=raw_text_hash,
+            archived=archived,
         )
         for cd in chunk_dicts
     ]

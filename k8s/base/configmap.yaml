@@ -3,10 +3,14 @@ kind: ConfigMap
 metadata:
   name: rahbar-config
   namespace: rahbar
+  labels:
+    app.kubernetes.io/name: rahbar
+    app.kubernetes.io/component: config
 data:
   RETRIEVER: "chroma"
   CHROMA_HOST: "chroma"
   CHROMA_COLLECTION: "rahbar_docs"
+  COLLECTION_NAME: "rahbar_docs"
   REDIS_HOST: "redis"
   EMBED_MODEL: "nomic-embed-text"
   TOP_K: "5"
@@ -17,4 +21,8 @@ data:
   LLM_MODEL: "llama-3.1-8b-instant"
   GROQ_MODEL: "llama-3.1-8b-instant"
   OLLAMA_HOST: "http://host.minikube.internal:11434"
-
+  # Release Gate Thresholds (editable live via kubectl edit configmap rahbar-config)
+  RECALL_AT_5_MIN_DROP: "2.0"
+  FAITHFULNESS_MIN: "0.75"
+  P95_LATENCY_MAX_MS: "3000"
+  ABSTENTION_CORRECTNESS_MIN: "1.0"
