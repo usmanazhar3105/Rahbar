@@ -234,6 +234,7 @@ def run_pipeline(settings: IndexerSettings) -> int:
         }
         report_file.write_text(json.dumps(report_content, indent=2), encoding="utf-8")
     except Exception as exc:
+        # pyrefly: ignore[missing-attribute]
         log.warning("Could not write ingest results report: %s", exc)
 
     return chunks_embedded_count
@@ -257,6 +258,7 @@ def main() -> int:
         settings.collection = args.collection
     elif args.chunk_size is not None or args.chunk_overlap is not None:
         # Candidate parameters provided -> write to rahbar_candidate
+        # pyrefly: ignore[read-only]
         settings.collection = "rahbar_candidate"
 
     os.environ["CHROMA_COLLECTION"] = settings.collection
