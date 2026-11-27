@@ -35,11 +35,13 @@ class Settings:
 
     # The embedding pin (section 4.4). The indexer reads the same ConfigMap key.
     embed_model: str = "nomic-embed-text"
+    embed_model_version: str = "1.0"
 
     # Vector store
     chroma_host: str = "chroma"
     chroma_port: int = 8000
     collection: str = "rahbar"
+    collection_version: str = "v1"
 
     # Semantic cache
     redis_host: str = "redis"
@@ -55,6 +57,10 @@ class Settings:
     hosted_base_url: str = ""        # e.g. an OpenAI-compatible endpoint
     llm_api_key: str = field(default="", repr=False)   # from the Secret; never log it
 
+    # Observability and trace logging (Part D / F4)
+    trace_dir: str = ""
+    trace_stdout: bool = True
+
     log_level: str = "INFO"
 
 
@@ -63,9 +69,11 @@ def get_settings() -> Settings:
         retriever=os.environ.get("RETRIEVER", "stub"),
         llm_provider=os.environ.get("LLM_PROVIDER", "stub"),
         embed_model=os.environ.get("EMBED_MODEL", "nomic-embed-text"),
+        embed_model_version=os.environ.get("EMBED_MODEL_VERSION", "1.0"),
         chroma_host=os.environ.get("CHROMA_HOST", "chroma"),
         chroma_port=_int("CHROMA_PORT", 8000),
         collection=os.environ.get("CHROMA_COLLECTION", "rahbar"),
+        collection_version=os.environ.get("COLLECTION_VERSION", "v1"),
         redis_host=os.environ.get("REDIS_HOST", "redis"),
         redis_port=_int("REDIS_PORT", 6379),
         cache_threshold=_float("CACHE_THRESHOLD", 0.92),
@@ -76,5 +84,7 @@ def get_settings() -> Settings:
         ollama_url=os.environ.get("OLLAMA_URL", "http://host.minikube.internal:11434"),
         hosted_base_url=os.environ.get("HOSTED_BASE_URL", ""),
         llm_api_key=os.environ.get("LLM_API_KEY", ""),
+        trace_dir=os.environ.get("TRACE_DIR", "traces"),
+        trace_stdout=os.environ.get("TRACE_STDOUT", "true").lower() != "false",
         log_level=os.environ.get("LOG_LEVEL", "INFO"),
     )

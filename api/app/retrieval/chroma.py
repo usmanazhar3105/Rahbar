@@ -80,6 +80,7 @@ def verify_embed_model(
 
 class ChromaRetriever:
     name = "chroma"
+    supports_trace = True
 
     def __init__(self, settings: Settings, client: Any | None = None) -> None:
         self.settings = settings
@@ -118,22 +119,25 @@ class ChromaRetriever:
 
         return embeddings[0]
 
-    def retrieve(self, question: str, k: int | None = None) -> list[Passage]:
-        """Retrieve the top k passages from ChromaDB.
-
-        Embeds the query, filters superseded documents (unless asked),
-        calculates similarity (1 - cosine distance), and applies the relevance floor.
-        """
+    def retrieve_with_trace(
+        self,
+        question: str,
+        k: int | None = None,
+        query_vector: list[float] | None = None,
+    ) -> tuple[list[Passage], dict[str, Any]]:
+        """Retrieve top-k passages along with full retrieval metadata for tracing."""
         top_k = k if k is not None else self.settings.top_k
-        query_vector = self.embed_query(question)
+        vec = query_vector if query_vector is not None else self.embed_query(question)
 
         collection = self.client.get_collection(self.settings.collection)
+        col_meta = getattr(collection, "metadata", None) or {}
 
         # Filter archived=false in all retrieval queries (plus superseded unless asked)
         filter_superseded = should_filter_superseded(question)
         where_filter: dict[str, Any] | None = None
+        filter_archived_in_where = os.environ.get("FILTER_ARCHIVED_IN_WHERE", "false").lower() == "true"
 
-        if os.environ.get("FILTER_ARCHIVED_IN_WHERE", "false").lower() == "true":
+        if filter_archived_in_where:
             if filter_superseded:
                 where_filter = {
                     "$and": [
@@ -147,7 +151,7 @@ class ChromaRetriever:
             where_filter = {"superseded": False} if filter_superseded else None
 
         query_kwargs: dict[str, Any] = {
-            "query_embeddings": [query_vector],
+            "query_embeddings": [vec],
             "n_results": top_k,
         }
         if where_filter:
@@ -162,33 +166,72 @@ class ChromaRetriever:
 
         passages: list[Passage] = []
         floor = self.settings.relevance_floor
+        dropped_archived = 0
+        dropped_below_floor = 0
 
         for chunk_id, doc_text, meta, distance in zip(ids_list, docs_list, metas_list, dists_list):
             meta = meta or {}
             # Filter archived=false in all retrieval queries
             if meta.get("archived", False):
+                dropped_archived += 1
                 continue
             # Chroma cosine distance: similarity = 1 - distance
             similarity = 1.0 - float(distance)
 
             # Relevance floor: drop chunks below floor threshold
             if similarity < floor:
+                dropped_below_floor += 1
                 continue
 
             page_val = meta.get("page")
             parsed_page = int(page_val) if page_val is not None else None
+            source_val = str(meta.get("source", "unknown"))
 
             passages.append(
                 Passage(
                     chunk_id=str(chunk_id),
                     text=str(doc_text),
-                    source=str(meta.get("source", "unknown")),
+                    source=source_val,
                     section=str(meta.get("section", "General")),
                     page=parsed_page,
                     score=round(similarity, 4),
+                    doc_id=str(meta.get("doc_id") or source_val),
+                    doc_version=str(meta.get("doc_version", "unknown")),
                 )
             )
 
         # Sort highest similarity first
         passages.sort(key=lambda p: p.score, reverse=True)
+
+        trace_meta: dict[str, Any] = {
+            "collection_name": self.settings.collection,
+            "collection_version": str(
+                col_meta.get("collection_version")
+                or getattr(self.settings, "collection_version", "v1")
+            ),
+            "embed_model": str(col_meta.get("embed_model") or self.settings.embed_model),
+            "embed_model_version": str(
+                col_meta.get("embed_model_version")
+                or getattr(self.settings, "embed_model_version", "1.0")
+            ),
+            "filters_applied": {
+                "where": where_filter,
+                "superseded_excluded": filter_superseded,
+                "archived_excluded": True,
+                "relevance_floor": floor,
+                "dropped_archived": dropped_archived,
+                "dropped_below_floor": dropped_below_floor,
+            },
+            "raw_ids": [str(cid) for cid in ids_list],
+            "reranked_order": [p.chunk_id for p in passages],
+        }
+        return passages, trace_meta
+
+    def retrieve(self, question: str, k: int | None = None) -> list[Passage]:
+        """Retrieve the top k passages from ChromaDB.
+
+        Embeds the query, filters superseded documents (unless asked),
+        calculates similarity (1 - cosine distance), and applies the relevance floor.
+        """
+        passages, _ = self.retrieve_with_trace(question, k=k)
         return passages
