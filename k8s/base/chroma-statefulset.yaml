@@ -25,6 +25,7 @@ spec:
         app.kubernetes.io/name: rahbar
         app.kubernetes.io/component: vectordb
     spec:
+      enableServiceLinks: false
       serviceAccountName: indexer-sa
       automountServiceAccountToken: false
       containers:

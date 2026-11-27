@@ -26,13 +26,13 @@ spec:
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
+        fsGroup: 1000
       volumes:
         - name: tmp
           emptyDir: {}
         - name: rahbar-data
           persistentVolumeClaim:
             claimName: rahbar-data
-            readOnly: true
       containers:
         - name: api
           image: rahbar-api:candidate
@@ -49,6 +49,8 @@ spec:
               value: "rahbar_candidate"
             - name: COLLECTION_NAME
               value: "rahbar_candidate"
+            - name: COLLECTION_VERSION
+              value: "candidate"
             - name: GROQ_API_KEY
               valueFrom:
                 secretKeyRef:
@@ -58,8 +60,13 @@ spec:
             - name: tmp
               mountPath: /tmp
             - name: rahbar-data
-              mountPath: /data
+              mountPath: /data/corpus
+              subPath: corpus
               readOnly: true
+            - name: rahbar-data
+              mountPath: /data/traces
+              subPath: traces
+              readOnly: false
           securityContext:
             readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false

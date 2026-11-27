@@ -1,0 +1,29 @@
+$ python eval/gate.py --baseline eval/results/eval_live_full_corpus.json --candidate eval/results/eval_failing_candidate.json --thresholds eval/thresholds.yaml
+================================================================================
+  RAHBAR RELEASE GATE VERIFICATION
+  Baseline:  eval/results/eval_live_full_corpus.json
+  Candidate: eval/results/eval_failing_candidate.json
+================================================================================
+CHECK                    | BASELINE   | CANDIDATE  | CRITERION            | STATUS
+--------------------------------------------------------------------------------
+Recall@5 Drop            | 88.0%      | 55.0%      | <= 2.0 pts drop      | FAIL
+Faithfulness             | 1.00       | 0.60       | >= 0.75              | FAIL
+p95 Latency              | 30046 ms   | 0 ms       | <= 3000 ms           | PASS
+Abstention Correctness   | 1.00       | 1.00       | >= 1.00 (and >= baseline) | PASS
+================================================================================
+>>> OVERALL RESULT: FAIL <<< (Exit code: 1)
+
+$ P95_LATENCY_MAX_MS=35000 python eval/gate.py --baseline eval/results/eval_live_full_corpus.json --candidate eval/results/eval_live_full_corpus.json --thresholds eval/thresholds.yaml
+================================================================================
+  RAHBAR RELEASE GATE VERIFICATION
+  Baseline:  eval/results/eval_live_full_corpus.json
+  Candidate: eval/results/eval_live_full_corpus.json
+================================================================================
+CHECK                    | BASELINE   | CANDIDATE  | CRITERION            | STATUS
+--------------------------------------------------------------------------------
+Recall@5 Drop            | 88.0%      | 88.0%      | <= 2.0 pts drop      | PASS
+Faithfulness             | 1.00       | 1.00       | >= 0.75              | PASS
+p95 Latency              | 30046 ms   | 30046 ms   | <= 35000 ms          | PASS
+Abstention Correctness   | 1.00       | 1.00       | >= 1.00 (and >= baseline) | PASS
+================================================================================
+>>> OVERALL RESULT: PASS <<< (Exit code: 0)

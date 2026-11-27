@@ -1,0 +1,23 @@
+$ python scripts/trace_tool.py --trace-file eval/results/traces_live.jsonl 402fd5f3286c41e6aadf2d7a16ccacc9
+========================================================================================
+  RAHBAR TRACE INSPECTOR | trace_id: 402fd5f3286c41e6aadf2d7a16ccacc9
+========================================================================================
+Timestamp:          2026-11-27T10:15:25.415Z
+User Query:         How many credits are typically required for completion of a standard 4-year Bachelor of Science in Computer Science (BS CS) program?
+Embedding Model:    nomic-embed-text (v1.0)
+Collection:         rahbar_docs (v1)
+Model & Params:     llama3.2:1b | {"provider": "ollama", "temperature": 0.1, "top_k": 5, "relevance_floor": 0.3, "cache_threshold": 0.92}
+Cache Status:       hit=True (hit)
+Latency Per Stage:  {"cache_lookup_ms": 1576.267, "retrieval_ms": 0.0, "guardrail_ms": 0.027, "generation_ms": 0.0, "total_ms": 1576.333}
+Guardrail Actions:  [{"rail": "query_injection_guardrail", "action": "passed"}, {"rail": "semantic_cache", "action": "cache_hit"}]
+
+Prompt Hash Verification: VERIFIED MATCH
+  Stored Hash:  sha256:b7288a482bc3f6d64af5e3ae450711f59e63fafc01aca344a2b76944359ab1a4
+  Rebuilt Hash: sha256:b7288a482bc3f6d64af5e3ae450711f59e63fafc01aca344a2b76944359ab1a4
+
+Answered From Context: True (confidence=high)
+Answer:    A standard 4-year Bachelor of Science in Computer Science (BS CS) program typically requires 128 credits.
+Citations: [{"source": "academic_rules_handbook_jun2026.pdf", "section": "NATIONAL UNIVERSITY OF COMPUTER AND EMERGING SCIENCES", "page": 32}]
+
+$ python scripts/summarize_traces.py --trace-file eval/results/traces_live.jsonl
+Total Queries: 131 | Abstention Rate: 77.9% (102/131) | Cache Hit Rate: 10.7% (14/131) | Injection Attempts Flagged: 32

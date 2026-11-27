@@ -151,6 +151,7 @@ jobs:
       - name: Apply manifests
         run: |
           kubectl apply -f k8s/base/namespace.yaml
+          kubectl apply -f k8s/base/pvc.yaml
           kubectl apply -f k8s/base/configmap.yaml
           kubectl apply -f k8s/base/serviceaccounts.yaml
           kubectl apply -f k8s/base/chroma-statefulset.yaml

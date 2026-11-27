@@ -1,4 +1,5 @@
 import os
+import tempfile
 
 import pytest  # noqa: F401
 
@@ -11,3 +12,4 @@ os.environ.setdefault("TOP_K", "5")
 os.environ.setdefault("RELEVANCE_FLOOR", "0.3")
 os.environ.setdefault("CACHE_THRESHOLD", "0.92")
 os.environ.setdefault("TEMPERATURE", "0.1")
+os.environ.setdefault("TRACE_DIR", tempfile.mkdtemp(prefix="rahbar_test_traces_"))

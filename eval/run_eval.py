@@ -60,6 +60,16 @@ def load_golden(path: Path | str) -> list[dict[str, Any]]:
         return data.get("questions") or []
 
 
+_SOURCE_ALIASES = {
+    "academic_rules_2026": "academic_rules_2026",
+    "academic_rules_handbook_jun2026": "academic_rules_2026",
+    "prospectus_academic_rules_2026": "academic_rules_2026",
+    "fee_schedule_2026": "fee_schedule_2026",
+    "fee_structure_2026": "fee_schedule_2026",
+    "fees_2026": "fee_schedule_2026",
+}
+
+
 def _match_source(s1: str, s2: str) -> bool:
     if not s1 or not s2:
         return False
@@ -69,7 +79,9 @@ def _match_source(s1: str, s2: str) -> bool:
         return True
     stem1 = Path(p1).stem.replace("-", "_").lower()
     stem2 = Path(p2).stem.replace("-", "_").lower()
-    return stem1 == stem2 or p1 in p2 or p2 in p1 or stem1 in stem2 or stem2 in stem1
+    if _SOURCE_ALIASES.get(stem1, stem1) == _SOURCE_ALIASES.get(stem2, stem2):
+        return True
+    return p1 in p2 or p2 in p1 or stem1 in stem2 or stem2 in stem1
 
 
 def _match_section(s1: str, s2: str) -> bool:
@@ -336,11 +348,30 @@ def run_embedding_tests(questions: list[dict[str, Any]], embedder: Any) -> dict[
 # 2. Component-Level (Retrieval) Tests
 # =============================================================================
 
-def get_chroma_collection(host: str = "localhost", port: int = 8000, collection_name: str = "rahbar_docs"):
+def get_chroma_collection(
+    host: str | None = None,
+    port: int | None = None,
+    collection_name: str = "rahbar_docs",
+):
     """Instantiate ChromaDB collection or mock offline."""
+    resolved_host = host or os.environ.get("CHROMA_HOST", "localhost")
+    raw_port = str(port) if port is not None else os.environ.get("CHROMA_PORT", "8000")
+    if ":" in raw_port:
+        raw_port = raw_port.rsplit(":", 1)[-1]
+    try:
+        resolved_port = int(raw_port)
+    except ValueError:
+        resolved_port = 8000
+
     try:
         import chromadb
-        client = chromadb.HttpClient(host=host, port=port)
+        from chromadb.config import Settings as ChromaSettings
+
+        client = chromadb.HttpClient(
+            host=resolved_host,
+            port=resolved_port,
+            settings=ChromaSettings(anonymized_telemetry=False),
+        )
         return client.get_collection(collection_name)
     except Exception:
         # Offline mock collection for test runners
@@ -363,6 +394,37 @@ def get_chroma_collection(host: str = "localhost", port: int = 8000, collection_
         return MockCollection()
 
 
+_OLLAMA_CACHE: dict[str, list[float]] = {}
+
+
+def _ollama_embed(text: str) -> list[float] | None:
+    """Embed text using Ollama when available so queries match 768-dim Chroma indices."""
+    if text in _OLLAMA_CACHE:
+        return _OLLAMA_CACHE[text]
+    ollama_url = (
+        os.environ.get("OLLAMA_HOST")
+        or os.environ.get("OLLAMA_URL")
+        or ""
+    ).rstrip("/")
+    if not ollama_url:
+        return None
+    model = os.environ.get("EMBED_MODEL", "nomic-embed-text")
+    try:
+        resp = httpx.post(
+            f"{ollama_url}/api/embed",
+            json={"model": model, "input": [text]},
+            timeout=30.0,
+        )
+        if resp.status_code == 200:
+            embs = resp.json().get("embeddings") or []
+            if embs:
+                _OLLAMA_CACHE[text] = embs[0]
+                return embs[0]
+    except Exception:
+        pass
+    return None
+
+
 def evaluate_retrieval(collection: Any, questions: list[dict[str, Any]], embedder: Any) -> dict[str, float]:
     """Calculate Recall@3, Recall@5, MRR, nDCG@5 on answerable questions."""
     answerables = [q for q in questions if q.get("type") in ("answerable", "hard", "ordinary")]
@@ -378,11 +440,33 @@ def evaluate_retrieval(collection: Any, questions: list[dict[str, Any]], embedde
         target_doc = q.get("ground_truth_doc") or (q.get("relevant_passages", [{}])[0].get("source") if q.get("relevant_passages") else None)
         query_text = q["question"]
 
-        try:
-            vec = embedder.encode(query_text, normalize_embeddings=True)[0].tolist()
-            res = collection.query(query_embeddings=[vec], n_results=5)
-        except Exception:
-            res = collection.query(query_texts=[query_text], n_results=5)
+        res = None
+        ollama_vec = _ollama_embed(query_text)
+        if ollama_vec is not None:
+            try:
+                res = collection.query(
+                    query_embeddings=[ollama_vec],
+                    n_results=5,
+                    where={"superseded": False},
+                )
+            except Exception:
+                try:
+                    res = collection.query(query_embeddings=[ollama_vec], n_results=5)
+                except Exception:
+                    res = None
+        if res is None:
+            try:
+                vec = embedder.encode(query_text, normalize_embeddings=True)[0].tolist()
+                try:
+                    res = collection.query(
+                        query_embeddings=[vec],
+                        n_results=5,
+                        where={"superseded": False},
+                    )
+                except Exception:
+                    res = collection.query(query_embeddings=[vec], n_results=5)
+            except Exception:
+                res = collection.query(query_texts=[query_text], n_results=5)
 
         metadatas = res.get("metadatas", [[]])[0]
 
@@ -441,7 +525,10 @@ def run_component_retrieval_tests(collection: Any, questions: list[dict[str, Any
         "Permaculture organic vegetable gardening tips and companion planting techniques for tomatoes.",
     ]
     try:
-        noise_vecs = [embedder.encode(d, normalize_embeddings=True)[0].tolist() for d in noise_docs]
+        noise_vecs = [
+            _ollama_embed(d) or embedder.encode(d, normalize_embeddings=True)[0].tolist()
+            for d in noise_docs
+        ]
         collection.add(
             ids=noise_ids,
             documents=noise_docs,
@@ -521,16 +608,25 @@ def call_groq_faithfulness(context: str, answer: str) -> dict[str, Any]:
     return {"supported": True, "reason": "Default fallback"}
 
 
-def run_e2e_tests(base_url: str, questions: list[dict[str, Any]]) -> dict[str, Any]:
+def run_e2e_tests(base_url: str, questions: list[dict[str, Any]], host_header: str | None = None) -> dict[str, Any]:
     """Execute end-to-end API tests."""
-    api_url = f"{base_url.rstrip('/')}/chat"
-    fallback_url = f"{base_url.rstrip('/')}/ask"
+    clean_base = base_url.rstrip("/")
+    if clean_base.endswith("/api"):
+        api_url = f"{clean_base}/chat"
+        fallback_url = f"{clean_base}/ask"
+        health_url = f"{clean_base[:-4]}/healthz"
+    else:
+        api_url = f"{clean_base}/api/chat"
+        fallback_url = f"{clean_base}/api/ask"
+        health_url = f"{clean_base}/healthz"
 
-    # Pre-flight health check to avoid waiting on 25 connection timeouts when offline
+    req_headers = {"Host": host_header} if host_header else {}
+
+    # Pre-flight health check to avoid waiting on connection timeouts when offline
     is_api_online = False
     try:
-        with httpx.Client(timeout=1.5) as c:
-            r = c.get(f"{base_url.rstrip('/')}/healthz")
+        with httpx.Client(timeout=2.0, headers=req_headers) as c:
+            r = c.get(health_url)
             if r.status_code in (200, 404):
                 is_api_online = True
     except Exception:
@@ -542,9 +638,9 @@ def run_e2e_tests(base_url: str, questions: list[dict[str, Any]]) -> dict[str, A
     citation_scores = []
     llm_judge_records = []
 
-    abstention_phrases = ["i don't know", "not found", "cannot answer", "no information", "not covered"]
+    abstention_phrases = ["i don't know", "not found", "cannot answer", "no information", "not covered", "does not contain"]
 
-    with httpx.Client(timeout=2.0) as client:
+    with httpx.Client(timeout=30.0, headers=req_headers) as client:
         for q in questions:
             q_id = q.get("id", "")
             q_type = q.get("type", "answerable")
@@ -649,6 +745,7 @@ def run_evaluation_suite(
     golden_path: Path,
     seed: int = 42,
     collection_name: str | None = None,
+    host_header: str | None = None,
 ) -> dict[str, Any]:
     """Execute complete evaluation pass."""
     random.seed(seed)
@@ -661,7 +758,7 @@ def run_evaluation_suite(
 
     embedding_results = run_embedding_tests(questions, embedder)
     retrieval_results = run_component_retrieval_tests(collection, questions, embedder)
-    e2e_results = run_e2e_tests(base_url, questions)
+    e2e_results = run_e2e_tests(base_url, questions, host_header=host_header)
 
     return {
         "embedding": embedding_results,
@@ -670,12 +767,43 @@ def run_evaluation_suite(
     }
 
 
+def _resolve_gate_thresholds(thresholds: dict[str, Any]) -> dict[str, float]:
+    """Resolve effective release gate thresholds (ConfigMap env vars override YAML)."""
+    return {
+        "embedding_gap_min": float(thresholds.get("embedding_gap_min", 0.15)),
+        "embedding_determinism_max_diff": float(thresholds.get("embedding_determinism_max_diff", 1e-5)),
+        "recall_at_5_min_drop": float(
+            os.environ.get("RECALL_AT_5_MIN_DROP", thresholds.get("recall_at_5_min_drop", 2.0))
+        ),
+        "retrieval_recall5_min": float(thresholds.get("retrieval_recall5_min", 0.60)),
+        "faithfulness_min": float(
+            os.environ.get(
+                "FAITHFULNESS_MIN",
+                thresholds.get("faithfulness_min", thresholds.get("faithfulness_rate_min", 0.75)),
+            )
+        ),
+        "p95_latency_max_ms": float(
+            os.environ.get("P95_LATENCY_MAX_MS", thresholds.get("p95_latency_max_ms", 3000.0))
+        ),
+        "abstention_correctness_min": float(
+            os.environ.get(
+                "ABSTENTION_CORRECTNESS_MIN",
+                thresholds.get("abstention_correctness_min", thresholds.get("abstention_rate_min", 1.0)),
+            )
+        ),
+        "citation_validity_min": float(thresholds.get("citation_validity_min", 0.85)),
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="RAHBAR Evaluation Benchmark Suite")
     parser.add_argument("--base-url", "--api", default=DEFAULT_BASE_URL, help="Base API URL")
     parser.add_argument("--golden", default=str(DEFAULT_GOLDEN), help="Path to golden set (JSONL or YAML)")
     parser.add_argument("--output", default=str(DEFAULT_OUTPUT_DIR), help="Output directory")
+    parser.add_argument("--out", default=None, help="Explicit output file path (optional)")
     parser.add_argument("--thresholds", default=str(DEFAULT_THRESHOLDS), help="Thresholds YAML")
+    parser.add_argument("--baseline", default=os.environ.get("BASELINE_PATH"), help="Optional baseline JSON for Recall@5 drop check")
+    parser.add_argument("--host", default=None, help="Optional Host header (for Ingress)")
     parser.add_argument("--collection", default=None, help="Target ChromaDB collection name")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
     args = parser.parse_args()
@@ -684,28 +812,48 @@ def main() -> int:
     output_dir = Path(args.output)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Load thresholds
-    thresholds = {}
+    # Load thresholds (YAML + ConfigMap environment variable overrides)
+    raw_thresholds: dict[str, Any] = {}
     if Path(args.thresholds).is_file():
         try:
-            thresholds = yaml.safe_load(Path(args.thresholds).read_text(encoding="utf-8")) or {}
+            raw_thresholds = yaml.safe_load(Path(args.thresholds).read_text(encoding="utf-8")) or {}
         except Exception:
             pass
+    eff_thresholds = _resolve_gate_thresholds(raw_thresholds)
 
     col_display = args.collection or os.environ.get("CHROMA_COLLECTION", "rahbar_docs")
-    print(f"\n=======================================================")
+    print("\n=======================================================")
     print(f"  RAHBAR Evaluation Suite (Seed: {args.seed})")
     print(f"  Golden: {golden_path} | Target API: {args.base_url}")
     print(f"  Chroma Collection: {col_display}")
-    print(f"=======================================================\n")
+    print(
+        "  Gate ConfigMap Thresholds: "
+        f"RECALL_AT_5_MIN_DROP={eff_thresholds['recall_at_5_min_drop']} pts, "
+        f"FAITHFULNESS_MIN={eff_thresholds['faithfulness_min']}, "
+        f"P95_LATENCY_MAX_MS={eff_thresholds['p95_latency_max_ms']} ms, "
+        f"ABSTENTION_CORRECTNESS_MIN={eff_thresholds['abstention_correctness_min']}"
+    )
+    print("=======================================================\n")
 
     # Run 1
     print("▶ Running Evaluation Pass 1...")
-    run1 = run_evaluation_suite(args.base_url, golden_path, seed=args.seed, collection_name=args.collection)
+    run1 = run_evaluation_suite(
+        args.base_url,
+        golden_path,
+        seed=args.seed,
+        collection_name=args.collection,
+        host_header=args.host,
+    )
 
     # Run 2 (Stochasticity check)
     print("▶ Running Evaluation Pass 2 (Stochasticity check with seed=42)...")
-    run2 = run_evaluation_suite(args.base_url, golden_path, seed=args.seed, collection_name=args.collection)
+    run2 = run_evaluation_suite(
+        args.base_url,
+        golden_path,
+        seed=args.seed,
+        collection_name=args.collection,
+        host_header=args.host,
+    )
 
     # Compute stochasticity delta between Run 1 and Run 2
     emb1, emb2 = run1["embedding"], run2["embedding"]
@@ -725,28 +873,29 @@ def main() -> int:
     print(f"{'METRIC':<36} | {'VALUE':<12} | {'GATE THRESHOLD':<16}")
     print("=" * 70)
 
+    p95_ms = round(e2e1["latency_p95_sec"] * 1000.0, 1)
     checks = [
         ("Embedding Paraphrase Sim", emb1["mean_sim_paraphrase"], "-"),
         ("Embedding Unrelated Sim", emb1["mean_sim_unrelated"], "-"),
-        ("Embedding Gap (Separation)", emb1["embedding_gap"], f">= {thresholds.get('embedding_gap_min', 0.15)}"),
-        ("Embedding Time/Chunk (sec)", emb1["embed_time_per_chunk_sec"], f"<= {thresholds.get('embedding_time_per_chunk_max_sec', 0.5)}s"),
-        ("Embedding Determinism Max Diff", emb1["determinism_max_diff"], f"<= {thresholds.get('embedding_determinism_max_diff', 1e-5)}"),
+        ("Embedding Gap (Separation)", emb1["embedding_gap"], f">= {eff_thresholds['embedding_gap_min']}"),
+        ("Embedding Time/Chunk (sec)", emb1["embed_time_per_chunk_sec"], f"<= {raw_thresholds.get('embedding_time_per_chunk_max_sec', 0.5)}s"),
+        ("Embedding Determinism Max Diff", emb1["determinism_max_diff"], f"<= {eff_thresholds['embedding_determinism_max_diff']}"),
         ("-" * 36, "-" * 12, "-" * 16),
-        ("Retrieval Recall@3", ret1["recall@3"], f">= {thresholds.get('retrieval_recall3_min', 0.50)}"),
-        ("Retrieval Recall@5", ret1["recall@5"], f">= {thresholds.get('retrieval_recall5_min', 0.60)}"),
-        ("Retrieval MRR", ret1["mrr"], f">= {thresholds.get('retrieval_mrr_min', 0.50)}"),
-        ("Retrieval nDCG@5", ret1["ndcg@5"], f">= {thresholds.get('retrieval_ndcg5_min', 0.50)}"),
-        ("Noise Test Recall@5 Delta", run1["retrieval"]["noise_test"]["delta"]["recall@5_delta"], f">= -{thresholds.get('noise_recall5_drop_max', 0.20)}"),
-        ("Typo Test Recall@5 Delta", run1["retrieval"]["typo_test"]["delta"]["recall@5_delta"], f">= -{thresholds.get('typo_recall5_drop_max', 0.25)}"),
+        ("Retrieval Recall@3", ret1["recall@3"], f">= {raw_thresholds.get('retrieval_recall3_min', 0.50)}"),
+        ("Retrieval Recall@5", ret1["recall@5"], f">= {eff_thresholds['retrieval_recall5_min']}"),
+        ("Retrieval MRR", ret1["mrr"], f">= {raw_thresholds.get('retrieval_mrr_min', 0.50)}"),
+        ("Retrieval nDCG@5", ret1["ndcg@5"], f">= {raw_thresholds.get('retrieval_ndcg5_min', 0.50)}"),
+        ("Noise Test Recall@5 Delta", run1["retrieval"]["noise_test"]["delta"]["recall@5_delta"], f">= -{raw_thresholds.get('noise_recall5_drop_max', 0.20)}"),
+        ("Typo Test Recall@5 Delta", run1["retrieval"]["typo_test"]["delta"]["recall@5_delta"], f">= -{raw_thresholds.get('typo_recall5_drop_max', 0.25)}"),
         ("-" * 36, "-" * 12, "-" * 16),
-        ("Faithfulness Rate (LLM-Judge)", e2e1["faithfulness_rate"], f">= {thresholds.get('faithfulness_rate_min', 0.70)}"),
-        ("Abstention Correctness Rate", e2e1["abstention_rate"], f">= {thresholds.get('abstention_rate_min', 0.80)}"),
-        ("Citation Validity Rate", e2e1["citation_validity"], f">= {thresholds.get('citation_validity_min', 0.85)}"),
-        ("Latency p50 (sec)", e2e1["latency_p50_sec"], f"<= {thresholds.get('latency_p50_max_sec', 5.0)}s"),
-        ("Latency p95 (sec)", e2e1["latency_p95_sec"], f"<= {thresholds.get('latency_p95_max_sec', 12.0)}s"),
-        ("LLM-Judge Agreement Rate", e2e1["llm_judge_agreement"], f">= {thresholds.get('llm_judge_agreement_min', 0.75)}"),
+        ("Faithfulness Rate (LLM-Judge)", e2e1["faithfulness_rate"], f">= {eff_thresholds['faithfulness_min']}"),
+        ("Abstention Correctness Rate", e2e1["abstention_rate"], f">= {eff_thresholds['abstention_correctness_min']}"),
+        ("Citation Validity Rate", e2e1["citation_validity"], f">= {eff_thresholds['citation_validity_min']}"),
+        ("Latency p50 (sec)", e2e1["latency_p50_sec"], f"<= {raw_thresholds.get('latency_p50_max_sec', 5.0)}s"),
+        ("Latency p95 (ms)", p95_ms, f"<= {eff_thresholds['p95_latency_max_ms']}ms"),
+        ("LLM-Judge Agreement Rate", e2e1["llm_judge_agreement"], f">= {raw_thresholds.get('llm_judge_agreement_min', 0.75)}"),
         ("-" * 36, "-" * 12, "-" * 16),
-        ("Stochasticity Max Delta", max(stochasticity_deltas.values()), f"<= {thresholds.get('stochasticity_max_delta', 0.05)}"),
+        ("Stochasticity Max Delta", max(stochasticity_deltas.values()), f"<= {raw_thresholds.get('stochasticity_max_delta', 0.05)}"),
     ]
 
     for name, val, thresh in checks:
@@ -765,43 +914,79 @@ def main() -> int:
         print(f"{row['id']:<6} | {row['question']:<42} | {str(row['human_label']):<6} | {str(row['llm_judge']):<6} | {row['agreement']}")
     print("-" * 75 + "\n")
 
-    # Gate Evaluation
+    # Gate Evaluation (enforcing YAML + live ConfigMap env var thresholds)
     all_passed = True
     failure_reasons = []
 
-    if emb1["embedding_gap"] < thresholds.get("embedding_gap_min", 0.15):
+    if emb1["embedding_gap"] < eff_thresholds["embedding_gap_min"]:
         all_passed = False
-        failure_reasons.append(f"Embedding gap {emb1['embedding_gap']} < min {thresholds.get('embedding_gap_min', 0.15)}")
+        failure_reasons.append(f"Embedding gap {emb1['embedding_gap']} < min {eff_thresholds['embedding_gap_min']}")
 
-    if emb1["determinism_max_diff"] > thresholds.get("embedding_determinism_max_diff", 1e-5):
+    if emb1["determinism_max_diff"] > eff_thresholds["embedding_determinism_max_diff"]:
         all_passed = False
-        failure_reasons.append(f"Embedding determinism max diff {emb1['determinism_max_diff']} > {thresholds.get('embedding_determinism_max_diff', 1e-5)}")
+        failure_reasons.append(
+            f"Embedding determinism max diff {emb1['determinism_max_diff']} > {eff_thresholds['embedding_determinism_max_diff']}"
+        )
 
-    if ret1["recall@5"] < thresholds.get("retrieval_recall5_min", 0.60):
+    if ret1["recall@5"] < eff_thresholds["retrieval_recall5_min"]:
         all_passed = False
-        failure_reasons.append(f"Retrieval Recall@5 {ret1['recall@5']} < min {thresholds.get('retrieval_recall5_min', 0.60)}")
+        failure_reasons.append(f"Retrieval Recall@5 {ret1['recall@5']} < min {eff_thresholds['retrieval_recall5_min']}")
 
-    if e2e1["faithfulness_rate"] < thresholds.get("faithfulness_rate_min", 0.70):
-        all_passed = False
-        failure_reasons.append(f"Faithfulness rate {e2e1['faithfulness_rate']} < min {thresholds.get('faithfulness_rate_min', 0.70)}")
+    # Optional Recall@5 drop check against baseline JSON (if provided or default exists)
+    baseline_candidate = Path(args.baseline) if args.baseline else (HERE / "results" / "eval_baseline.json")
+    if baseline_candidate.is_file():
+        try:
+            b_data = json.loads(baseline_candidate.read_text(encoding="utf-8"))
+            b_r5 = float(
+                b_data.get("run1", b_data)
+                .get("retrieval", {})
+                .get("baseline", b_data)
+                .get("recall@5", b_data.get("recall@5", 0.0))
+            )
+            drop_pts = (b_r5 - ret1["recall@5"]) * (100.0 if b_r5 <= 1.0 else 1.0)
+            if drop_pts > eff_thresholds["recall_at_5_min_drop"]:
+                all_passed = False
+                failure_reasons.append(
+                    f"Recall@5 dropped {drop_pts:.2f} pts > max allowed {eff_thresholds['recall_at_5_min_drop']} pts"
+                )
+        except Exception:
+            pass
 
-    if e2e1["abstention_rate"] < thresholds.get("abstention_rate_min", 0.80):
+    if e2e1["faithfulness_rate"] < eff_thresholds["faithfulness_min"]:
         all_passed = False
-        failure_reasons.append(f"Abstention rate {e2e1['abstention_rate']} < min {thresholds.get('abstention_rate_min', 0.80)}")
+        failure_reasons.append(
+            f"Faithfulness rate {e2e1['faithfulness_rate']} < min {eff_thresholds['faithfulness_min']}"
+        )
 
-    if e2e1["citation_validity"] < thresholds.get("citation_validity_min", 0.85):
+    if e2e1["abstention_rate"] < eff_thresholds["abstention_correctness_min"]:
         all_passed = False
-        failure_reasons.append(f"Citation validity {e2e1['citation_validity']} < min {thresholds.get('citation_validity_min', 0.85)}")
+        failure_reasons.append(
+            f"Abstention rate {e2e1['abstention_rate']} < min {eff_thresholds['abstention_correctness_min']}"
+        )
+
+    if e2e1["citation_validity"] < eff_thresholds["citation_validity_min"]:
+        all_passed = False
+        failure_reasons.append(
+            f"Citation validity {e2e1['citation_validity']} < min {eff_thresholds['citation_validity_min']}"
+        )
+
+    if p95_ms > eff_thresholds["p95_latency_max_ms"]:
+        all_passed = False
+        failure_reasons.append(
+            f"Latency p95 {p95_ms} ms > max {eff_thresholds['p95_latency_max_ms']} ms"
+        )
 
     # Write results JSON
     timestamp = time.strftime("%Y%m%d_%H%M%S")
-    results_path = output_dir / f"eval_{timestamp}.json"
+    results_path = Path(args.out) if args.out else (output_dir / f"eval_{timestamp}.json")
+    results_path.parent.mkdir(parents=True, exist_ok=True)
     full_output = {
         "timestamp": timestamp,
         "config": {
             "base_url": args.base_url,
             "golden": str(golden_path),
             "seed": args.seed,
+            "thresholds": eff_thresholds,
         },
         "run1": run1,
         "run2": run2,

@@ -23,13 +23,14 @@ spec:
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
+        fsGroup: 1000
       volumes:
         - name: rahbar-data
           persistentVolumeClaim:
             claimName: rahbar-data
       containers:
         - name: evaluator
-          image: rahbar-indexer:latest
+          image: rahbar-eval:latest
           imagePullPolicy: Never
           command:
             - "python"

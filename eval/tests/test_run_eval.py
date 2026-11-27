@@ -6,7 +6,7 @@ import sys
 HERE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(HERE))
 
-from run_eval import recall_at_k, citation_validity, summarise, gate, load_golden
+from run_eval import recall_at_k, citation_validity, summarise, gate, load_golden, _resolve_gate_thresholds
 
 
 def test_load_golden_file():
@@ -164,4 +164,17 @@ def test_gate_pass_and_fail():
     failures = gate(bad_abstain, baseline)
     assert len(failures) == 1
     assert "abstention_correctness" in failures[0]
+
+
+def test_resolve_gate_thresholds_reads_configmap_env(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("RECALL_AT_5_MIN_DROP", "1.5")
+    monkeypatch.setenv("FAITHFULNESS_MIN", "0.90")
+    monkeypatch.setenv("P95_LATENCY_MAX_MS", "1500")
+    monkeypatch.setenv("ABSTENTION_CORRECTNESS_MIN", "1.0")
+
+    eff = _resolve_gate_thresholds({"faithfulness_min": 0.75, "p95_latency_max_ms": 3000})
+    assert eff["recall_at_5_min_drop"] == 1.5
+    assert eff["faithfulness_min"] == 0.90
+    assert eff["p95_latency_max_ms"] == 1500.0
+    assert eff["abstention_correctness_min"] == 1.0
 

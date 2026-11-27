@@ -27,6 +27,7 @@ spec:
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
+        fsGroup: 1000
       volumes:
         - name: rahbar-data
           persistentVolumeClaim:

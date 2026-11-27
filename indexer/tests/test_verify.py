@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import json
-import shutil
-import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock
+
+import pytest
 
 from pipeline.store import rollback
 from pipeline.verify import verify
@@ -185,3 +185,51 @@ def test_rollback_function() -> None:
         assert result["restored"] == 1
         assert result["archived"] == 1
         assert mock_collection.update.call_count >= 1
+
+
+def test_run_pipeline_batch_b_verification_and_frozen_settings_override(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from dataclasses import replace
+    from unittest.mock import patch
+
+    from pipeline.config import get_settings
+    from pipeline.run import discover, run_pipeline
+
+    batch_b_dir = Path(__file__).resolve().parent.parent.parent / "corpus" / "batch_b"
+    if not batch_b_dir.is_dir():
+        pytest.skip("corpus/batch_b not present")
+
+    discovered = discover(str(batch_b_dir))
+    names = {p.name for p, _, _ in discovered}
+    assert "corrupt.bin" in names
+    assert "missing_meta.txt" in names
+    assert "exact_dup_1.txt" in names
+
+    monkeypatch.setenv("CORPUS_DIR", str(batch_b_dir))
+    monkeypatch.setenv("QUARANTINE_DIR", str(tmp_path / "quarantine"))
+    monkeypatch.setenv("ARCHIVE_DIR", str(tmp_path / "archive"))
+    monkeypatch.setenv("REGISTRY_PATH", str(tmp_path / "registry" / "versions.json"))
+    monkeypatch.setenv("RESULTS_DIR", str(tmp_path / "results"))
+
+    settings = replace(get_settings(), chunk_size=300, chunk_overlap=30, collection="rahbar_candidate")
+    mock_col = MagicMock()
+    mock_col.get.return_value = {"ids": [], "metadatas": []}
+    mock_col.metadata = {"embed_model": settings.embed_model, "dimension": 768}
+    mock_client = MagicMock()
+    mock_client.get_or_create_collection.return_value = mock_col
+
+    with (
+        patch("pipeline.store.get_chroma_client", return_value=mock_client),
+        patch("pipeline.embed.embed", side_effect=lambda texts, _s: [[0.1] * 768 for _ in texts]),
+        patch("pipeline.store.flush_redis_cache"),
+    ):
+        embedded_count = run_pipeline(settings)
+
+    assert embedded_count > 0
+    verify_reports = list((tmp_path / "results").glob("verify_*.json"))
+    assert len(verify_reports) == 1
+    report = json.loads(verify_reports[0].read_text(encoding="utf-8"))
+    # Empty, corrupt.bin, truncated, missing_meta, exact_dup_2 must be quarantined
+    assert report["quarantined"] >= 5

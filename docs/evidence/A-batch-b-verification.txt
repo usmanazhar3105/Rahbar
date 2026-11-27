@@ -1,0 +1,14 @@
+$ python -m pipeline.verify --corpus corpus/batch_b
+Run ID: batch_b_demo | Timestamp: 2026-11-27T10:36:02Z
+Total: 10 | Passed: 3 | Quarantined: 7
+======================================================================================
+[QUARANTINED] corrupt.bin            | quality: garbled text: 62.5% non-ASCII characters (>30%)
+[QUARANTINED] empty.txt              | quality: empty text
+[PASS]        exact_dup_1.txt        | FAST-NUCES Academic Regulations
+[QUARANTINED] exact_dup_2.txt        | uniqueness: exact duplicate text (SHA-256 match)
+[PASS]        injected.txt           | Supplementary Examination Rules
+[QUARANTINED] missing_meta.txt       | completeness: missing or empty metadata fields: date
+[QUARANTINED] near_dup.txt           | uniqueness: near-duplicate text (cosine similarity 0.9938 > 0.95)
+[QUARANTINED] academic_policy.txt    | uniqueness: exact duplicate text (SHA-256 match)
+[QUARANTINED] truncated.txt          | completeness: text ends with ellipsis (cut-off text)
+[PASS]        valid_new.txt          | Undergraduate Internship and Practicum Policy
