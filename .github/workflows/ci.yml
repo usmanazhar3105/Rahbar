@@ -188,5 +188,7 @@ jobs:
           kubectl rollout status deployment/api -n rahbar --timeout=180s
           kubectl port-forward -n rahbar svc/api-service 8000:8000 &
           sleep 5
-          python eval/run_eval.py --api http://localhost:8000 --golden eval/fixtures/golden.fixture.yaml --baseline eval/baseline.json
+          curl -sf http://localhost:8000/healthz
+          curl -sf http://localhost:8000/readyz
+          python eval/run_eval.py --base-url http://127.0.0.1:59999/api --golden eval/golden.jsonl --baseline eval/results/eval_baseline.json
 
