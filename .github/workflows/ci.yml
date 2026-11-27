@@ -168,7 +168,7 @@ jobs:
         run: |
           kubectl patch configmap rahbar-config \
             -n rahbar \
-            --patch '{"data":{"LLM_PROVIDER":"stub"}}'
+            --patch '{"data":{"LLM_PROVIDER":"stub","RETRIEVER":"stub","CI_MODE":"true"}}'
       - name: Patch deployment images for CI
         run: |
           kubectl set image deployment/api \
@@ -180,9 +180,12 @@ jobs:
           kubectl get pods -n rahbar
           kubectl get services -n rahbar
           echo "E2E cluster setup verified"
+      - name: Install eval dependencies
+        run: |
+          pip install -r eval/requirements.txt
       - name: Run eval runner gate
         run: |
-          kubectl wait --for=condition=ready pod -l app=api -n rahbar --timeout=120s
+          kubectl rollout status deployment/api -n rahbar --timeout=180s
           kubectl port-forward -n rahbar svc/api-service 8000:8000 &
           sleep 5
           python eval/run_eval.py --api http://localhost:8000 --golden eval/fixtures/golden.fixture.yaml --baseline eval/baseline.json
