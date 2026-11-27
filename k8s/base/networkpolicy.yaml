@@ -65,6 +65,38 @@ spec:
         - podSelector:
             matchLabels:
               app: ui
+        - podSelector:
+            matchLabels:
+              app: eval-job
+        - podSelector:
+            matchLabels:
+              app: eval-candidate-job
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8000
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-eval-and-ingress-to-candidate
+  namespace: rahbar
+spec:
+  podSelector:
+    matchLabels:
+      app: api-candidate
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: eval-candidate-job
+        - podSelector:
+            matchLabels:
+              app: eval-job
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: ingress-nginx
@@ -90,7 +122,25 @@ spec:
               app: api
         - podSelector:
             matchLabels:
+              app: api-candidate
+        - podSelector:
+            matchLabels:
               app: indexer
+        - podSelector:
+            matchLabels:
+              app: ingestion-job
+        - podSelector:
+            matchLabels:
+              app: ingestion-cronjob
+        - podSelector:
+            matchLabels:
+              app: reindex
+        - podSelector:
+            matchLabels:
+              app: eval-job
+        - podSelector:
+            matchLabels:
+              app: eval-candidate-job
       ports:
         - protocol: TCP
           port: 8000
@@ -113,7 +163,19 @@ spec:
               app: api
         - podSelector:
             matchLabels:
+              app: api-candidate
+        - podSelector:
+            matchLabels:
               app: indexer
+        - podSelector:
+            matchLabels:
+              app: ingestion-job
+        - podSelector:
+            matchLabels:
+              app: ingestion-cronjob
+        - podSelector:
+            matchLabels:
+              app: reindex
       ports:
         - protocol: TCP
           port: 6379
@@ -125,8 +187,12 @@ metadata:
   namespace: rahbar
 spec:
   podSelector:
-    matchLabels:
-      app: api
+    matchExpressions:
+      - key: app
+        operator: In
+        values:
+          - api
+          - api-candidate
   policyTypes:
     - Egress
   egress:
@@ -140,6 +206,10 @@ spec:
       ports:
         - protocol: TCP
           port: 443
+    - to:
+        - ipBlock:
+            cidr: 192.168.65.254/32
+      ports:
         - protocol: TCP
           port: 11434
     - to:
@@ -160,10 +230,32 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
+  name: allow-ui-egress
+  namespace: rahbar
+spec:
+  podSelector:
+    matchLabels:
+      app: ui
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: api
+      ports:
+        - protocol: TCP
+          port: 8000
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
   name: allow-indexer-egress
   namespace: rahbar
 spec:
-  podSelector: {}
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: indexer
   policyTypes:
     - Egress
   egress:
@@ -187,5 +279,37 @@ spec:
       ports:
         - protocol: TCP
           port: 6379
-
-
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-eval-egress
+  namespace: rahbar
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: evaluation
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 11434
+    - to:
+        - podSelector:
+            matchLabels:
+              app: api
+        - podSelector:
+            matchLabels:
+              app: api-candidate
+        - podSelector:
+            matchLabels:
+              app: chroma
+      ports:
+        - protocol: TCP
+          port: 8000
