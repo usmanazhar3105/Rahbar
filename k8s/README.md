@@ -6,7 +6,8 @@ This guide details the deployment, configuration, release gate workflow, control
 - **Images**:
   - API (Production): `rahbar-api:latest`
   - API (Candidate): `rahbar-api:candidate`
-  - Indexer / Evaluator: `rahbar-indexer:latest`
+  - Indexer: `rahbar-indexer:latest`
+  - Evaluator: `rahbar-eval:latest`
   - Vector Store: `chromadb/chroma:latest`
   - Cache: `redis:7-alpine`
 
@@ -17,6 +18,7 @@ This guide details the deployment, configuration, release gate workflow, control
 ```
 k8s/
 ├── README.md
+├── eval-job.yaml                  # Top-level symlink/manifest for `kubectl apply -f k8s/eval-job.yaml`
 ├── base/
 │   ├── namespace.yaml
 │   ├── serviceaccounts.yaml
@@ -24,8 +26,7 @@ k8s/
 │   ├── pvc.yaml                   # 5Gi ReadWriteOnce (rahbar-data mounted at /data)
 │   ├── configmap.yaml             # Core settings & release gate thresholds
 │   ├── services.yaml              # ClusterIP services (includes named metrics port 9090)
-│   ├── service.yaml               # Service alias for api-service
-│   ├── api-deployment.yaml        # API Deployment (mounts rahbar-data at /data read-only)
+│   ├── api-deployment.yaml        # API Deployment (mounts corpus read-only, /data/traces writable)
 │   ├── chroma-statefulset.yaml    # ChromaDB StatefulSet (mounts /chroma/data)
 │   ├── redis-deployment.yaml      # Redis Cache Deployment & PVC
 │   ├── ui-deployment.yaml         # Frontend Web UI Deployment
@@ -107,7 +108,7 @@ kubectl get job ingestion -n rahbar
 ### B. Run Production Evaluation Suite
 To execute the automated evaluation suite against the active production service (`http://api-service:8000/api`) with release gate verification:
 ```bash
-kubectl apply -f k8s/base/eval-job.yaml
+kubectl apply -f k8s/eval-job.yaml
 ```
 To inspect evaluation logs and gate outcome:
 ```bash
