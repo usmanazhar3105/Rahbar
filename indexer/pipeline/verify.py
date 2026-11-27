@@ -22,6 +22,40 @@ log = logging.getLogger("rahbar.verify")
 _SENTENCE_TRANSFORMER = None
 
 
+def _embed_for_uniqueness(text: str, model: Any | None) -> list[float] | None:
+    """Compute normalized vector using SentenceTransformer or Ollama nomic-embed-text."""
+    if model is not None:
+        try:
+            vec = model.encode([text], normalize_embeddings=True)[0]
+            return [float(x) for x in vec]
+        except Exception:
+            pass
+
+    ollama_url = (
+        os.environ.get("OLLAMA_HOST")
+        or os.environ.get("OLLAMA_URL")
+        or ""
+    ).rstrip("/")
+    if not ollama_url:
+        return None
+    embed_model = os.environ.get("EMBED_MODEL", "nomic-embed-text")
+    try:
+        import httpx
+
+        resp = httpx.post(
+            f"{ollama_url}/api/embed",
+            json={"model": embed_model, "input": [text]},
+            timeout=15.0,
+        )
+        if resp.status_code == 200:
+            embs = resp.json().get("embeddings") or []
+            if embs:
+                return [float(x) for x in embs[0]]
+    except Exception:
+        pass
+    return None
+
+
 def get_sentence_transformer() -> Any | None:
     """Lazy load all-MiniLM-L6-v2 embedding model for near-duplicate detection."""
     global _SENTENCE_TRANSFORMER
@@ -218,22 +252,21 @@ def verify(
                     "reason": "exact duplicate text (SHA-256 match)",
                 }
             else:
-                # Near-duplicate check with sentence-transformers cosine similarity > 0.95
-                if model is not None and seen_embeddings:
+                # Near-duplicate check with cosine similarity > 0.95
+                if seen_embeddings:
                     try:
-                        import numpy as np
-
-                        emb = model.encode([text], normalize_embeddings=True)[0]
-                        max_sim = 0.0
-                        for prev_emb in seen_embeddings:
-                            sim = float(np.dot(emb, prev_emb))
-                            if sim > max_sim:
-                                max_sim = sim
-                        if max_sim > 0.95:
-                            quarantine_reason = {
-                                "check": "uniqueness",
-                                "reason": f"near-duplicate text (cosine similarity {max_sim:.4f} > 0.95)",
-                            }
+                        emb = _embed_for_uniqueness(text, model)
+                        if emb is not None:
+                            max_sim = 0.0
+                            for prev_emb in seen_embeddings:
+                                sim = sum(a * b for a, b in zip(emb, prev_emb))
+                                if sim > max_sim:
+                                    max_sim = sim
+                            if max_sim > 0.95:
+                                quarantine_reason = {
+                                    "check": "uniqueness",
+                                    "reason": f"near-duplicate text (cosine similarity {max_sim:.4f} > 0.95)",
+                                }
                     except Exception as exc:
                         log.warning("Near-duplicate embedding check failed: %s", exc)
 
@@ -254,12 +287,9 @@ def verify(
             # Passed all 4 checks
             text_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
             seen_hashes.add(text_hash)
-            if model is not None:
-                try:
-                    emb = model.encode([text], normalize_embeddings=True)[0]
-                    seen_embeddings.append(emb)
-                except Exception:
-                    pass
+            emb = _embed_for_uniqueness(text, model)
+            if emb is not None:
+                seen_embeddings.append(emb)
 
             passed_docs.append(doc)
             per_doc_results.append({

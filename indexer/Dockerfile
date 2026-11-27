@@ -6,7 +6,8 @@ RUN pip install --upgrade pip setuptools==78.1.1
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app \
-    TMPDIR=/tmp
+    TMPDIR=/tmp \
+    TIKTOKEN_CACHE_DIR=/app/.tiktoken_cache
 
 WORKDIR /app
 
@@ -26,7 +27,8 @@ RUN groupadd --gid 1000 appgroup && \
 # Copy and install dependencies first for optimal layer caching
 COPY requirements.txt .
 RUN pip install --upgrade pip setuptools wheel && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir -r requirements.txt && \
+    python -c "import tiktoken; tiktoken.get_encoding('cl100k_base')"
 
 # Copy indexer pipeline code
 COPY pipeline/ ./pipeline/

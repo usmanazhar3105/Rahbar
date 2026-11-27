@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import html
 import logging
 import re
 from collections import Counter
@@ -174,6 +175,12 @@ def extract(path: str, doc_version: str, superseded: bool) -> Document:
 
     # For Markdown, HTML, or plain text (e.g. eval fixtures)
     text = file_path.read_text(encoding="utf-8", errors="replace")
+
+    if file_path.suffix.lower() in {".html", ".htm"}:
+        text = re.sub(r"(?is)<(script|style).*?</\1>", " ", text)
+        text = re.sub(r"<[^>]+>", " ", text)
+        text = re.sub(r"[ \t]+", " ", html.unescape(text))
+        text = re.sub(r"\n\s*\n+", "\n", text).strip()
 
     # Strip YAML front matter if present
     if text.startswith("---"):

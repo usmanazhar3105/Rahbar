@@ -8,7 +8,7 @@ from typing import Any
 
 import tiktoken
 
-from .models import Chunk, Document
+from .models import Chunk, Document, Page
 
 # Fallback encoding if cl100k_base cannot be loaded
 _ENC: tiktoken.Encoding | None = None

@@ -16,6 +16,7 @@ import os
 import sys
 import time
 import uuid
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -30,7 +31,7 @@ def log(msg: str, **fields: object) -> None:
 
 def _front_matter(path: Path) -> dict[str, str]:
     """Read `key: value` lines between leading '---' markers (used by eval/fixtures)."""
-    lines = path.read_text(encoding="utf-8").splitlines()
+    lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
     if not lines or lines[0].strip() != "---":
         return {}
     meta: dict[str, str] = {}
@@ -42,11 +43,29 @@ def _front_matter(path: Path) -> dict[str, str]:
     return meta
 
 
+def _load_sidecar_meta(path: Path) -> dict[str, Any] | None:
+    """Load `<filename>.meta.json` or `<stem>.meta.json` if present alongside a corpus file."""
+    candidates = [
+        path.with_name(f"{path.name}.meta.json"),
+        path.with_suffix(".meta.json"),
+    ]
+    for cand in candidates:
+        if cand.is_file():
+            try:
+                data = json.loads(cand.read_text(encoding="utf-8"))
+                if isinstance(data, dict):
+                    return data
+            except Exception:
+                pass
+    return None
+
+
 def discover(corpus_dir: str) -> list[tuple[Path, str, bool]]:
     """List (path, doc_version, superseded) for every document to index.
 
     corpus/fetch.py writes _index.json next to the files it downloads; use it when
-    present. Otherwise read Markdown front matter (the CI fixtures work this way).
+    present. Otherwise discover .pdf/.md/.html/.txt/.bin files and read frontmatter or
+    `.meta.json` sidecar metadata when present.
     """
     root = Path(corpus_dir)
     index = root / "_index.json"
@@ -56,14 +75,48 @@ def discover(corpus_dir: str) -> list[tuple[Path, str, bool]]:
                  bool(e.get("superseded", False))) for e in entries]
     found = []
     for path in sorted(root.glob("*")):
-        if path.suffix.lower() not in {".pdf", ".md", ".html", ".txt"}:
+        if not path.is_file():
+            continue
+        if path.suffix.lower() not in {".pdf", ".md", ".html", ".txt", ".bin"}:
             continue
         if path.name.lower().startswith("readme"):
+            continue
+        sidecar = _load_sidecar_meta(path)
+        if sidecar is not None:
+            doc_ver = str(sidecar.get("date") or sidecar.get("version") or "unknown")
+            sup = bool(sidecar.get("superseded", False))
+            found.append((path, doc_ver, sup))
             continue
         meta = _front_matter(path) if path.suffix.lower() == ".md" else {}
         found.append((path, meta.get("doc_version", "unknown"),
                       meta.get("superseded", "false").lower() == "true"))
     return found
+
+
+def _update_registry(registry_path: str, passed_docs: list[dict[str, Any]]) -> None:
+    """Persist verified document versions to registry JSON for recency tracking."""
+    reg_file = Path(registry_path)
+    try:
+        existing: dict[str, Any] = {}
+        if reg_file.is_file():
+            loaded = json.loads(reg_file.read_text(encoding="utf-8"))
+            if isinstance(loaded, dict):
+                existing = loaded
+        for doc in passed_docs:
+            meta = doc.get("metadata", {})
+            src = str(meta.get("source", ""))
+            title = str(meta.get("title", ""))
+            date = str(meta.get("date", ""))
+            if src and date:
+                key = f"{src}:{title}" if title else src
+                prev = existing.get(key, {})
+                prev_date = str(prev.get("date", "")) if isinstance(prev, dict) else str(prev)
+                if not prev_date or date >= prev_date:
+                    existing[key] = {"source": src, "title": title, "date": date}
+        reg_file.parent.mkdir(parents=True, exist_ok=True)
+        reg_file.write_text(json.dumps(existing, indent=2), encoding="utf-8")
+    except Exception as exc:
+        log("warn_registry_update_failed", error=str(exc))
 
 
 def run_pipeline(settings: IndexerSettings) -> int:
@@ -73,7 +126,6 @@ def run_pipeline(settings: IndexerSettings) -> int:
     from .extract import extract
     from .store import (
         archive_superseded_version,
-        flush_redis_cache,
         get_chroma_client,
         get_existing_docs_in_chroma,
         get_or_create_collection,
@@ -81,7 +133,11 @@ def run_pipeline(settings: IndexerSettings) -> int:
     )
     from .verify import verify
 
-    run_id = f"run_{time.strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}"
+    run_id = os.environ.get("RUN_ID") or f"run_{time.strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}"
+    registry_path = os.environ.get("REGISTRY_PATH", "/data/registry/versions.json")
+    quarantine_dir = os.environ.get("QUARANTINE_DIR", "/data/quarantine")
+    archive_dir = os.environ.get("ARCHIVE_DIR", "/data/archive")
+    results_dir = os.environ.get("RESULTS_DIR", "/data/results")
 
     documents = discover(settings.corpus_dir)
     if not documents:
@@ -96,29 +152,46 @@ def run_pipeline(settings: IndexerSettings) -> int:
         extracted_doc = extract(str(path), doc_version, superseded)
         cleaned_doc = clean(extracted_doc)
 
-        # Concatenate full page text
         raw_text = "\n\n".join(p.text for p in cleaned_doc.pages)
-        title = path.stem.replace("_", " ").replace("-", " ").title()
-        if path.suffix.lower() == ".md":
-            fm = _front_matter(path)
-            title = fm.get("title", title)
-            doc_version = fm.get("doc_version", doc_version)
+        sidecar = _load_sidecar_meta(path)
 
-        # doc_id: SHA-256 hash of the source path + title
-        doc_id = hashlib.sha256(f"{str(path)}:{title}".encode("utf-8")).hexdigest()
-        raw_text_hash = hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
-
-        extracted_docs.append({
-            "text": raw_text,
-            "metadata": {
+        if sidecar is not None:
+            source_label = str(sidecar.get("source") or path.name)
+            title = str(sidecar.get("title") or "")
+            date_val = sidecar.get("date") or sidecar.get("version") or ""
+            page_count = sidecar.get("page_count") or len(cleaned_doc.pages) or 1
+            meta_dict: dict[str, Any] = {
+                "source": source_label,
+                "title": title,
+                "page_count": page_count,
+            }
+            if date_val:
+                meta_dict["date"] = str(date_val)
+            effective_version = str(date_val) if date_val else doc_version
+        else:
+            title = path.stem.replace("_", " ").replace("-", " ").title()
+            if path.suffix.lower() == ".md":
+                fm = _front_matter(path)
+                title = fm.get("title", title)
+                doc_version = fm.get("doc_version", doc_version)
+            source_label = path.name
+            effective_version = doc_version
+            meta_dict = {
                 "source": str(path),
                 "title": title,
                 "date": doc_version,
                 "page_count": len(cleaned_doc.pages) or 1,
-            },
+            }
+
+        doc_id = hashlib.sha256(f"{source_label}:{title}".encode("utf-8")).hexdigest()
+        raw_text_hash = hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+        extracted_docs.append({
+            "text": raw_text,
+            "metadata": meta_dict,
             "doc_id": doc_id,
             "raw_text_hash": raw_text_hash,
-            "doc_version": doc_version,
+            "doc_version": effective_version,
             "superseded": superseded,
             "path": str(path),
             "_extracted_doc": cleaned_doc,
@@ -127,7 +200,13 @@ def run_pipeline(settings: IndexerSettings) -> int:
     # -------------------------------------------------------------------------
     # 2. Verification stage (AFTER extraction, BEFORE chunking)
     # -------------------------------------------------------------------------
-    passed_docs, quarantined_docs = verify(extracted_docs, run_id=run_id)
+    passed_docs, quarantined_docs = verify(
+        extracted_docs,
+        run_id=run_id,
+        registry_path=registry_path,
+        quarantine_dir=quarantine_dir,
+        results_dir=results_dir,
+    )
     print(f"Verification: {len(passed_docs)} passed, {len(quarantined_docs)} quarantined")
 
     # Connect to ChromaDB
@@ -142,7 +221,7 @@ def run_pipeline(settings: IndexerSettings) -> int:
     # 3. DELETED documents: remove orphans from ChromaDB
     # -------------------------------------------------------------------------
     existing_in_chroma = get_existing_docs_in_chroma(collection)
-    corpus_doc_ids = {d["doc_id"] for d in extracted_docs}
+    corpus_doc_ids = {d["doc_id"] for d in passed_docs}
 
     deleted_count = 0
     for db_doc_id, chunks_for_doc in existing_in_chroma.items():
@@ -186,7 +265,7 @@ def run_pipeline(settings: IndexerSettings) -> int:
                     doc_id=d_id,
                     old_version=db_ver,
                     old_file_path=doc.get("path"),
-                    archive_base_dir="/data/archive",
+                    archive_base_dir=archive_dir,
                 )
                 updated_count += 1
                 docs_to_embed.append(doc)
@@ -214,16 +293,21 @@ def run_pipeline(settings: IndexerSettings) -> int:
         store(all_new_chunks, vectors, settings, replace_all=False)
         chunks_embedded_count = len(all_new_chunks)
 
+    _update_registry(registry_path, passed_docs)
+
     # -------------------------------------------------------------------------
     # 6. Summary and ingest report
     # -------------------------------------------------------------------------
-    summary = f"unchanged={unchanged_count}  updated={updated_count}  deleted={deleted_count}  chunks_embedded={chunks_embedded_count}"
+    summary = (
+        f"unchanged={unchanged_count}  updated={updated_count}  "
+        f"deleted={deleted_count}  chunks_embedded={chunks_embedded_count}"
+    )
     print(summary)
 
-    results_dir = Path("/data/results")
+    res_path = Path(results_dir)
     try:
-        results_dir.mkdir(parents=True, exist_ok=True)
-        report_file = results_dir / f"ingest_{run_id}.json"
+        res_path.mkdir(parents=True, exist_ok=True)
+        report_file = res_path / f"ingest_{run_id}.json"
         report_content = {
             "run_id": run_id,
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -234,8 +318,7 @@ def run_pipeline(settings: IndexerSettings) -> int:
         }
         report_file.write_text(json.dumps(report_content, indent=2), encoding="utf-8")
     except Exception as exc:
-        # pyrefly: ignore[missing-attribute]
-        log.warning("Could not write ingest results report: %s", exc)
+        log("warn_ingest_report_failed", error=str(exc))
 
     return chunks_embedded_count
 
@@ -249,17 +332,19 @@ def main() -> int:
     args = parser.parse_args()
     settings = get_settings()
 
+    updates: dict[str, Any] = {}
     if args.chunk_size is not None:
-        settings.chunk_size = args.chunk_size
+        updates["chunk_size"] = args.chunk_size
     if args.chunk_overlap is not None:
-        settings.chunk_overlap = args.chunk_overlap
+        updates["chunk_overlap"] = args.chunk_overlap
 
     if args.collection is not None:
-        settings.collection = args.collection
+        updates["collection"] = args.collection
     elif args.chunk_size is not None or args.chunk_overlap is not None:
-        # Candidate parameters provided -> write to rahbar_candidate
-        # pyrefly: ignore[read-only]
-        settings.collection = "rahbar_candidate"
+        updates["collection"] = "rahbar_candidate"
+
+    if updates:
+        settings = replace(settings, **updates)
 
     os.environ["CHROMA_COLLECTION"] = settings.collection
 
