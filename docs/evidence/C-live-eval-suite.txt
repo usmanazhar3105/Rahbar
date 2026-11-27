@@ -1,0 +1,37 @@
+$ kubectl logs job/eval -n rahbar
+=======================================================
+  RAHBAR Evaluation Suite (Seed: 42)
+  Golden: /app/eval/golden.jsonl | Target API: http://api-service:8000/api
+  Chroma Collection: rahbar_docs
+  Gate ConfigMap Thresholds: RECALL_AT_5_MIN_DROP=2.0 pts, FAITHFULNESS_MIN=0.75, P95_LATENCY_MAX_MS=3000.0 ms, ABSTENTION_CORRECTNESS_MIN=1.0
+=======================================================
+
+▶ Running Evaluation Pass 1...
+▶ Running Evaluation Pass 2 (Stochasticity check with seed=42)...
+
+======================================================================
+METRIC                               | VALUE        | GATE THRESHOLD
+======================================================================
+Embedding Paraphrase Sim             | 0.8679       | -
+Embedding Unrelated Sim              | 0.1035       | -
+Embedding Gap (Separation)           | 0.7643       | >= 0.15
+Embedding Time/Chunk (sec)           | 0.00023      | <= 0.5s
+Embedding Determinism Max Diff       | 0.0          | <= 1e-05
+-------------------------------------+--------------+-----------------
+Retrieval Recall@3                   | 0.84         | >= 0.5
+Retrieval Recall@5                   | 0.88         | >= 0.6
+Retrieval MRR                        | 0.85         | >= 0.5
+Retrieval nDCG@5                     | 0.8572       | >= 0.5
+Noise Test Recall@5 Delta            | 0.0          | >= -0.2
+Typo Test Recall@5 Delta             | 0.0          | >= -0.25
+-------------------------------------+--------------+-----------------
+Faithfulness Rate (LLM-Judge)        | 1.0          | >= 0.75
+Abstention Correctness Rate          | 1.0          | >= 1.0
+Citation Validity Rate               | 1.0          | >= 0.85
+Latency p50 (sec)                    | 30.029       | <= 5.0s
+Latency p95 (ms)                     | 30046.0      | <= 3000.0ms
+LLM-Judge Agreement Rate             | 1.0          | >= 0.75
+-------------------------------------+--------------+-----------------
+Stochasticity Max Delta              | 0.0          | <= 0.05
+======================================================================
+Results written to: /data/results/eval_20261127_102202.json

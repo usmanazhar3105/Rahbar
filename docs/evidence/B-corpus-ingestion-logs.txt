@@ -1,0 +1,25 @@
+$ kubectl logs job/ingestion -n rahbar
+{"ts": "2026-11-27T09:41:47Z", "logger": "rahbar.indexer", "msg": "indexer starting", "embed_model": "nomic-embed-text", "collection": "rahbar_docs", "chroma": "chroma:8000", "chunk_size": 400, "chunk_overlap": 50}
+Verification: 8 passed, 0 quarantined
+Orphan removed: 18dd43d549ccbf0854c28df9fc4f9470b413a36fffc4c7263fc779251aa92884, 4 chunks deleted
+Orphan removed: 4aa7b83f5165daa56c0ea1405bfdb128d7d105bdc1e15bcab2c03e5ce730ac91, 4 chunks deleted
+Orphan removed: 4ad7f2d40dad18af4a3d5a2d16ff7be6eb88373a49d3016655a73bf3246f0702, 4 chunks deleted
+--- Stored 1326 chunk(s) in 'rahbar_docs' ---
+  • academic_rules_aug2023.pdf: 114 chunk(s)
+  • academic_rules_handbook_jun2026.pdf: 341 chunk(s)
+  • annual_report_2019_20.pdf: 92 chunk(s)
+  • annual_report_2023_24.pdf: 318 chunk(s)
+  • faculty_entrepreneurship_policy.pdf: 17 chunk(s)
+  • fee_structure_2026.html: 18 chunk(s)
+  • prospectus_academic_rules_2026.pdf: 47 chunk(s)
+  • student_handbook_jun2026.pdf: 379 chunk(s)
+unchanged=0  updated=8  deleted=3  chunks_embedded=1326
+{"ts": "2026-11-27T09:53:26Z", "logger": "rahbar.indexer", "msg": "indexer finished", "chunks": 1326, "seconds": 699.3}
+
+$ kubectl logs job/ingestion-unchanged -n rahbar
+Verification: 8 passed, 0 quarantined
+Skipping unchanged: 74dd45f0366576c0a525eee78e0641be4151927c1109e8c1c8bbce9781f05bcb
+Skipping unchanged: 06a91989b57a1e0dd5f893c7632fa40f61aea7657c8248c4a246e71c5078cfa3
+... (8/8 documents skipped)
+unchanged=8  updated=0  deleted=0  chunks_embedded=0
+{"ts": "2026-11-27T09:57:47Z", "logger": "rahbar.indexer", "msg": "indexer finished", "chunks": 0, "seconds": 243.2}
