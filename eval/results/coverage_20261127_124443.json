@@ -1,0 +1,528 @@
+{
+  "timestamp": "20261127_124443",
+  "threshold": 0.75,
+  "total_queries": 40,
+  "covered_queries": 30,
+  "coverage_rate": 0.75,
+  "uncovered_count": 10,
+  "uncovered_by_topic": {
+    "attendance": [
+      {
+        "id": "lq04",
+        "query": "Does an FA grade affect my cumulative GPA the same as an F grade?",
+        "similarity": 0.6327,
+        "closest_golden_id": "q022",
+        "closest_golden_question": "Compare the minimum attendance threshold required to avoid exam debarment in the 2023 regulations versus the 2026 rules, and specify the exact penalty grade assigned upon failing this requirement."
+      }
+    ],
+    "other": [
+      {
+        "id": "lq21",
+        "query": "Can final year students take 21 credit hours with special advisor approval?",
+        "similarity": 0.0278,
+        "closest_golden_id": "q023",
+        "closest_golden_question": "Under the Faculty Entrepreneurship and Technical Start-ups Policy, what percentage of equity or revenue share is reserved for the university when an incubated spin-off commercializes university IP?"
+      },
+      {
+        "id": "lq26",
+        "query": "Are undergraduate students required to do a mandatory summer internship before graduating?",
+        "similarity": 0.0309,
+        "closest_golden_id": "q027",
+        "closest_golden_question": "Is attendance mandatory and compulsory for undergraduate laboratory practical sessions and tutorials?"
+      },
+      {
+        "id": "lq27",
+        "query": "What are the rules for supplementary examinations in the final graduating semester?",
+        "similarity": 0.0139,
+        "closest_golden_id": "q023",
+        "closest_golden_question": "Under the Faculty Entrepreneurship and Technical Start-ups Policy, what percentage of equity or revenue share is reserved for the university when an incubated spin-off commercializes university IP?"
+      },
+      {
+        "id": "lq30",
+        "query": "What are the curfew hours for entering the boys hostel on weekends?",
+        "similarity": 0.2528,
+        "closest_golden_id": "q018",
+        "closest_golden_question": "What are the designated room allotment criteria and security deposits for student on-campus hostel accommodation?"
+      },
+      {
+        "id": "lq37",
+        "query": "When are the trials for the university varsity cricket and badminton teams?",
+        "similarity": 0.015,
+        "closest_golden_id": "q023",
+        "closest_golden_question": "Under the Faculty Entrepreneurship and Technical Start-ups Policy, what percentage of equity or revenue share is reserved for the university when an incubated spin-off commercializes university IP?"
+      },
+      {
+        "id": "lq39",
+        "query": "Where is the lost and found office located if I forgot my student ID card?",
+        "similarity": 0.1805,
+        "closest_golden_id": "q004",
+        "closest_golden_question": "What grade do I get if my attendance is short?"
+      },
+      {
+        "id": "lq40",
+        "query": "What lunch items and sandwiches are sold at the main cafeteria tuck shop?",
+        "similarity": 0.2129,
+        "closest_golden_id": "q017",
+        "closest_golden_question": "What is the lunch menu and pricing for the university central cafeteria on Mondays?"
+      }
+    ],
+    "fees": [
+      {
+        "id": "lq34",
+        "query": "How much is the semester bus card fee for students commuting from Islamabad?",
+        "similarity": 0.2601,
+        "closest_golden_id": "q004",
+        "closest_golden_question": "What grade do I get if my attendance is short?"
+      },
+      {
+        "id": "lq38",
+        "query": "What are the operating hours and monthly membership fees for the campus gym?",
+        "similarity": 0.0068,
+        "closest_golden_id": "q021",
+        "closest_golden_question": "If I got a C- back under the 2023 undergraduate rules and repeated it, could I get an A, or how did the grade ceiling work compared to the 2026 rules?"
+      }
+    ]
+  },
+  "details": [
+    {
+      "id": "lq01",
+      "query": "What happens if my attendance in CS101 falls below 80 percent?",
+      "expected_domain": "in",
+      "max_similarity": 0.9111,
+      "is_covered": true,
+      "closest_golden": {
+        "id": "q001",
+        "question": "How much attendance do I need to sit in the final exam at FAST?"
+      }
+    },
+    {
+      "id": "lq02",
+      "query": "Is attendance compulsory for laboratory sessions and tutorials?",
+      "expected_domain": "in",
+      "max_similarity": 0.8108,
+      "is_covered": true,
+      "closest_golden": {
+        "id": "q027",
+        "question": "Is attendance mandatory and compulsory for undergraduate laboratory practical sessions and tutorials?"
+      }
+    },
+    {
+      "id": "lq03",
+      "query": "Can the teacher condone attendance if I submit a hospital medical certificate?",
+      "expected_domain": "in",
+      "max_similarity": 0.9315,
+      "is_covered": true,
+      "closest_golden": {
+        "id": "q026",
+        "question": "Can a course instructor condone attendance shortage if a student submits a hospital medical certificate?"
+      }
+    },
+    {
+      "id": "lq04",
+      "query": "Does an FA grade affect my cumulative GPA the same as an F grade?",
+      "expected_domain": "in",
+      "max_similarity": 0.6327,
+      "is_covered": false,
+      "closest_golden": {
+        "id": "q022",
+        "question": "Compare the minimum attendance threshold required to avoid exam debarment in the 2023 regulations versus the 2026 rules, and specify the exact penalty grade assigned upon failing this requirement."
+      }
+    },
+    {
+      "id": "lq05",
+      "query": "What is the tuition cost per credit hour for software engineering undergraduate students?",
+      "expected_domain": "in",
+      "max_similarity": 0.9542,
+      "is_covered": true,
+      "closest_golden": {
+        "id": "q009",
+        "question": "What is the tuition fee per credit hour in PKR for undergraduate BS programs according to the 2026 fee schedule?"
+      }
+    },
+    {
+      "id": "lq06",
+      "query": "What is the penalty fee if I pay my semester dues after the bank due date?",
+      "expected_domain": "in",
+      "max_similarity": 0.8338,
+      "is_covered": true,
+      "closest_golden": {
+        "id": "q010",
+        "question": "What is the late registration fee charged per day if a student fails to register during the regular registration window?"
+      }
+    },
+    {
+      "id": "lq07",
+      "query": "Can undergraduate students pay their semester tuition fee in monthly installments?",
+      "expected_domain": "in",
+      "max_similarity": 0.9978,
+      "is_covered": true,
+      "closest_golden": {
+        "id": "q030",
+        "question": "Can undergraduate students pay their semester tuition fee dues in monthly installments upon request?"
+      }
+    },
+    {
+      "id": "lq08",
+      "query": "How much fee is refunded if I drop all courses in the first week of classes?",
+      "expected_domain": "in",
+      "max_similarity": 0.9637,
+      "is_covered": true,
+      "closest_golden": {
+        "id": "q028",
+        "question": "How much tuition fee is refunded if an undergraduate student drops all courses in the first week of classes?"
+      }
+    },
+    {
+      "id": "lq09",
+      "query": "What is the minimum CGPA required to avoid being placed on first academic warning?",
+      "expected_domain": "in",
+      "max_similarity": 0.9452,
+      "is_covered": true,
+      "closest_golden": {
+        "id": "q002",
+        "question": "What CGPA puts me on academic warning?"
+      }
+    },
+    {
+      "id": "lq10",
+      "query": "If I am on academic warning, how many credit hours am I permitted to register?",
+      "expected_domain": "in",
+      "max_similarity": 0.8074,
+      "is_covered": true,
+      "closest_golden": {
+        "id": "q025",
+        "question": "Can a student who is placed on academic warning still register for a full 18-credit semester load, or what constraint applies to their academic program?"
+      }
+    },
+    {
+      "id": "lq11",
+      "query": "Does getting two consecutive warnings mean I am immediately expelled from university?",
+      "expected_domain": "in",
+      "max_similarity": 0.8086,
+      "is_covered": true,
+      "closest_golden": {
+        "id": "q025",
+        "question": "Can a student who is placed on academic warning still register for a full 18-credit semester load, or what constraint applies to their academic program?"
+      }
+    },
+    {
+      "id": "lq12",
+      "query": "How many consecutive academic warnings will lead to permanent drop from degree?",
+      "expected_domain": "in",
+      "max_similarity": 0.8727,
+      "is_covered": true,
+      "closest_golden": {
+        "id": "q003",
+        "question": "How many warnings can I get before getting dropped from FAST?"
+      }
+    },
+    {
+      "id": "lq13",
+      "query": "What is the exact letter grade point for A minus on the university grading chart?",
+      "expected_domain": "in",
+      "max_similarity": 0.9876,
+      "is_covered": true,
+      "closest_golden": {
+        "id": "q008",
+        "question": "What is the grade point value assigned to a letter grade of A on the university four-point grading scale?"
+      }
+    },
+    {
+      "id": "lq14",
+      "query": "What is the lowest passing grade required for a prerequisite programming course?",
+      "expected_domain": "in",
+      "max_similarity": 0.9906,
+      "is_covered": true,
+      "closest_golden": {
+        "id": "q012",
+        "question": "What is the minimum passing grade for a prerequisite course before enrolling in subsequent courses?"
+      }
+    },
+    {
+      "id": "lq15",
+      "query": "Under 2026 rules if I repeat a course will my previous grade be replaced completely?",
+      "expected_domain": "in",
+      "max_similarity": 0.9682,
+      "is_covered": true,
+      "closest_golden": {
+        "id": "q021",
+        "question": "If I got a C- back under the 2023 undergraduate rules and repeated it, could I get an A, or how did the grade ceiling work compared to the 2026 rules?"
+      }
+    },
+    {
+      "id": "lq16",
+      "query": "Was course repeat grade capped at B under the previous 2023 undergraduate regulations?",
+      "expected_domain": "in",
+      "max_similarity": 0.9572,
+      "is_covered": true,
+      "closest_golden": {
+        "id": "q021",
+        "question": "If I got a C- back under the 2023 undergraduate rules and repeated it, could I get an A, or how did the grade ceiling work compared to the 2026 rules?"
+      }
+    },
+    {
+      "id": "lq17",
+      "query": "What semester GPA is needed to get my name on the Dean's Honor List?",
+      "expected_domain": "in",
+      "max_similarity": 0.9754,
+      "is_covered": true,
+      "closest_golden": {
+        "id": "q005",
+        "question": "What semester GPA do I need to make the Dean's List?"
+      }
+    },
+    {
+      "id": "lq18",
+      "query": "What is the deadline week to withdraw from a registered course with a W grade?",
+      "expected_domain": "in",
+      "max_similarity": 0.9149,
+      "is_covered": true,
+      "closest_golden": {
+        "id": "q007",
+        "question": "Up to which week of a regular semester can a student withdraw from a registered course with a grade of W?"
+      }
+    },
+    {
+      "id": "lq19",
+      "query": "Can a student withdraw from a course after the 10th week under any circumstances?",
+      "expected_domain": "in",
+      "max_similarity": 0.8929,
+      "is_covered": true,
+      "closest_golden": {
+        "id": "q007",
+        "question": "Up to which week of a regular semester can a student withdraw from a registered course with a grade of W?"
+      }
+    },
+    {
+      "id": "lq20",
+      "query": "What is the maximum course credit load allowed for regular full-time undergraduate students?",
+      "expected_domain": "in",
+      "max_similarity": 0.9877,
+      "is_covered": true,
+      "closest_golden": {
+        "id": "q013",
+        "question": "What is the maximum course credit load an undergraduate student in good academic standing can register for in a regular semester?"
+      }
+    },
+    {
+      "id": "lq21",
+      "query": "Can final year students take 21 credit hours with special advisor approval?",
+      "expected_domain": "in",
+      "max_similarity": 0.0278,
+      "is_covered": false,
+      "closest_golden": {
+        "id": "q023",
+        "question": "Under the Faculty Entrepreneurship and Technical Start-ups Policy, what percentage of equity or revenue share is reserved for the university when an incubated spin-off commercializes university IP?"
+      }
+    },
+    {
+      "id": "lq22",
+      "query": "How many total credit hours must I pass to graduate with a BS in Computer Science?",
+      "expected_domain": "in",
+      "max_similarity": 0.9193,
+      "is_covered": true,
+      "closest_golden": {
+        "id": "q015",
+        "question": "How many credits are typically required for completion of a standard 4-year Bachelor of Science in Computer Science (BS CS) program?"
+      }
+    },
+    {
+      "id": "lq23",
+      "query": "What is the maximum number of years allowed to complete a four year BS program?",
+      "expected_domain": "in",
+      "max_similarity": 0.9886,
+      "is_covered": true,
+      "closest_golden": {
+        "id": "q006",
+        "question": "What is the maximum permissible duration to complete an undergraduate four-year BS degree program?"
+      }
+    },
+    {
+      "id": "lq24",
+      "query": "What is the minimum cumulative GPA needed to receive the bachelor degree at graduation?",
+      "expected_domain": "in",
+      "max_similarity": 0.9806,
+      "is_covered": true,
+      "closest_golden": {
+        "id": "q011",
+        "question": "What is the minimum cumulative GPA required to be awarded an undergraduate degree at graduation?"
+      }
+    },
+    {
+      "id": "lq25",
+      "query": "What intermediate percentage is required for computing department admissions eligibility?",
+      "expected_domain": "in",
+      "max_similarity": 0.8845,
+      "is_covered": true,
+      "closest_golden": {
+        "id": "q014",
+        "question": "What is the required overall percentage in HSSC or equivalent exam to be eligible for undergraduate computing program admissions?"
+      }
+    },
+    {
+      "id": "lq26",
+      "query": "Are undergraduate students required to do a mandatory summer internship before graduating?",
+      "expected_domain": "in",
+      "max_similarity": 0.0309,
+      "is_covered": false,
+      "closest_golden": {
+        "id": "q027",
+        "question": "Is attendance mandatory and compulsory for undergraduate laboratory practical sessions and tutorials?"
+      }
+    },
+    {
+      "id": "lq27",
+      "query": "What are the rules for supplementary examinations in the final graduating semester?",
+      "expected_domain": "in",
+      "max_similarity": 0.0139,
+      "is_covered": false,
+      "closest_golden": {
+        "id": "q023",
+        "question": "Under the Faculty Entrepreneurship and Technical Start-ups Policy, what percentage of equity or revenue share is reserved for the university when an incubated spin-off commercializes university IP?"
+      }
+    },
+    {
+      "id": "lq28",
+      "query": "What is the charge for obtaining an official duplicate university transcript?",
+      "expected_domain": "in",
+      "max_similarity": 0.9972,
+      "is_covered": true,
+      "closest_golden": {
+        "id": "q029",
+        "question": "What is the administrative charge for obtaining an official duplicate university transcript from the one-stop student center?"
+      }
+    },
+    {
+      "id": "lq29",
+      "query": "What is the guest Wi-Fi password for students in the girls hostel?",
+      "expected_domain": "out",
+      "max_similarity": 0.9971,
+      "is_covered": true,
+      "closest_golden": {
+        "id": "q016",
+        "question": "What is the guest Wi-Fi password for the student girls hostel on Islamabad campus?"
+      }
+    },
+    {
+      "id": "lq30",
+      "query": "What are the curfew hours for entering the boys hostel on weekends?",
+      "expected_domain": "out",
+      "max_similarity": 0.2528,
+      "is_covered": false,
+      "closest_golden": {
+        "id": "q018",
+        "question": "What are the designated room allotment criteria and security deposits for student on-campus hostel accommodation?"
+      }
+    },
+    {
+      "id": "lq31",
+      "query": "How do I apply for room allotment and pay the hostel security deposit?",
+      "expected_domain": "out",
+      "max_similarity": 0.9949,
+      "is_covered": true,
+      "closest_golden": {
+        "id": "q018",
+        "question": "What are the designated room allotment criteria and security deposits for student on-campus hostel accommodation?"
+      }
+    },
+    {
+      "id": "lq32",
+      "query": "What is the weekly dinner menu and chicken biryani schedule in the student mess?",
+      "expected_domain": "out",
+      "max_similarity": 0.9989,
+      "is_covered": true,
+      "closest_golden": {
+        "id": "q031",
+        "question": "What is the weekly dinner menu and chicken biryani schedule in the student mess at Islamabad campus?"
+      }
+    },
+    {
+      "id": "lq33",
+      "query": "What are the morning shuttle pickup timings from Rawalpindi Saddar to campus?",
+      "expected_domain": "out",
+      "max_similarity": 0.9714,
+      "is_covered": true,
+      "closest_golden": {
+        "id": "q019",
+        "question": "What are the morning bus route timings and shuttle departure points for Rawalpindi pick-and-drop service?"
+      }
+    },
+    {
+      "id": "lq34",
+      "query": "How much is the semester bus card fee for students commuting from Islamabad?",
+      "expected_domain": "out",
+      "max_similarity": 0.2601,
+      "is_covered": false,
+      "closest_golden": {
+        "id": "q004",
+        "question": "What grade do I get if my attendance is short?"
+      }
+    },
+    {
+      "id": "lq35",
+      "query": "What time does the campus library close during midterm examination weeks?",
+      "expected_domain": "out",
+      "max_similarity": 0.9963,
+      "is_covered": true,
+      "closest_golden": {
+        "id": "q032",
+        "question": "What time does the campus library close during midterm examination weeks and weekend study periods?"
+      }
+    },
+    {
+      "id": "lq36",
+      "query": "How many books can an undergraduate student borrow simultaneously from the central library?",
+      "expected_domain": "out",
+      "max_similarity": 0.8976,
+      "is_covered": true,
+      "closest_golden": {
+        "id": "q020",
+        "question": "What brands of laptop are sold with student installment plans at the campus bookstore?"
+      }
+    },
+    {
+      "id": "lq37",
+      "query": "When are the trials for the university varsity cricket and badminton teams?",
+      "expected_domain": "out",
+      "max_similarity": 0.015,
+      "is_covered": false,
+      "closest_golden": {
+        "id": "q023",
+        "question": "Under the Faculty Entrepreneurship and Technical Start-ups Policy, what percentage of equity or revenue share is reserved for the university when an incubated spin-off commercializes university IP?"
+      }
+    },
+    {
+      "id": "lq38",
+      "query": "What are the operating hours and monthly membership fees for the campus gym?",
+      "expected_domain": "out",
+      "max_similarity": 0.0068,
+      "is_covered": false,
+      "closest_golden": {
+        "id": "q021",
+        "question": "If I got a C- back under the 2023 undergraduate rules and repeated it, could I get an A, or how did the grade ceiling work compared to the 2026 rules?"
+      }
+    },
+    {
+      "id": "lq39",
+      "query": "Where is the lost and found office located if I forgot my student ID card?",
+      "expected_domain": "out",
+      "max_similarity": 0.1805,
+      "is_covered": false,
+      "closest_golden": {
+        "id": "q004",
+        "question": "What grade do I get if my attendance is short?"
+      }
+    },
+    {
+      "id": "lq40",
+      "query": "What lunch items and sandwiches are sold at the main cafeteria tuck shop?",
+      "expected_domain": "out",
+      "max_similarity": 0.2129,
+      "is_covered": false,
+      "closest_golden": {
+        "id": "q017",
+        "question": "What is the lunch menu and pricing for the university central cafeteria on Mondays?"
+      }
+    }
+  ]
+}
